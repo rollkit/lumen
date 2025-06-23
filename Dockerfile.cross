@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+# This Dockerfile is used for cross-platform builds
+
+FROM --platform=$TARGETPLATFORM gcr.io/distroless/cc-debian12
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+# Copy the pre-built binary based on the target platform
+COPY dist/bin/${TARGETPLATFORM}/lumen /usr/local/bin/lumen
+
+# Expose default ports
+EXPOSE 8545 8546 30303 6060 9001
+
+# Set the entrypoint
+ENTRYPOINT ["/usr/local/bin/lumen"]

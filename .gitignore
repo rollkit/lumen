@@ -55,3 +55,6 @@ flamegraph.svg
 
 # OS specific
 Thumbs.db
+
+# Docker build artifacts
+/dist/

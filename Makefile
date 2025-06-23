@@ -108,3 +108,56 @@ test-rollkit:
 ## test-common: Test only the common crate
 test-common:
 	$(CARGO) test -p lumen-common
+
+##@ Docker
+
+# Docker configuration
+GIT_TAG ?= $(shell git describe --tags --abbrev=0 || echo "latest")
+BIN_DIR = dist/bin
+DOCKER_IMAGE_NAME ?= ghcr.io/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/' | cut -d'/' -f1)/lumen
+PROFILE ?= release
+
+# List of features to use when building
+FEATURES ?= jemalloc
+
+## docker-build: Build Docker image
+docker-build:
+	docker build -t $(DOCKER_IMAGE_NAME):$(GIT_TAG) .
+
+## docker-build-push: Build and push a cross-arch Docker image
+docker-build-push:
+	$(call docker_build_push,$(GIT_TAG),$(GIT_TAG))
+
+## docker-build-push-latest: Build and push a cross-arch Docker image tagged with latest
+docker-build-push-latest:
+	$(call docker_build_push,$(GIT_TAG),latest)
+
+# Cross-compilation targets
+build-x86_64-unknown-linux-gnu:
+	cross build --bin $(BINARY_NAME) --target x86_64-unknown-linux-gnu --features "$(FEATURES)" --profile "$(PROFILE)"
+
+build-aarch64-unknown-linux-gnu:
+	JEMALLOC_SYS_WITH_LG_PAGE=16 cross build --bin $(BINARY_NAME) --target aarch64-unknown-linux-gnu --features "$(FEATURES)" --profile "$(PROFILE)"
+
+# Create a cross-arch Docker image with the given tags and push it
+define docker_build_push
+	$(MAKE) build-x86_64-unknown-linux-gnu
+	mkdir -p $(BIN_DIR)/linux/amd64
+	cp $(TARGET_DIR)/x86_64-unknown-linux-gnu/$(PROFILE)/$(BINARY_NAME) $(BIN_DIR)/linux/amd64/$(BINARY_NAME)
+
+	$(MAKE) build-aarch64-unknown-linux-gnu
+	mkdir -p $(BIN_DIR)/linux/arm64
+	cp $(TARGET_DIR)/aarch64-unknown-linux-gnu/$(PROFILE)/$(BINARY_NAME) $(BIN_DIR)/linux/arm64/$(BINARY_NAME)
+
+	docker buildx build --file ./Dockerfile.cross . \
+		--platform linux/amd64,linux/arm64 \
+		--tag $(DOCKER_IMAGE_NAME):$(1) \
+		--tag $(DOCKER_IMAGE_NAME):$(2) \
+		--provenance=false \
+		--push
+endef
+
+##@ CI Helpers
+
+## check-all: Run all checks (fmt, lint, test)
+check-all: fmt-check lint test
