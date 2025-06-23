@@ -33,6 +33,8 @@ reth-payload-builder.workspace = true
 reth-basic-payload-builder.workspace = true
 reth-engine-local.workspace = true
 reth-revm.workspace = true
+reth-chainspec.workspace = true
+reth_ethereum_primitives.workspace = true
 
 # Alloy dependencies
 alloy-genesis.workspace = true
