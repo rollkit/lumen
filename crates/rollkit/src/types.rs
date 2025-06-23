@@ -1,5 +1,5 @@
-use reth_primitives::TransactionSigned;
 use alloy_primitives::{Address, B256};
+use reth_primitives::TransactionSigned;
 use serde::{Deserialize, Serialize};
 
 /// Payload attributes for the Rollkit Reth node
@@ -46,7 +46,7 @@ impl RollkitPayloadAttributes {
     /// Validates the payload attributes
     pub fn validate(&self) -> Result<(), PayloadAttributesError> {
         // For rollkit, empty transactions are allowed (empty blocks are valid)
-        
+
         if let Some(gas_limit) = self.gas_limit {
             if gas_limit == 0 {
                 return Err(PayloadAttributesError::InvalidGasLimit);
@@ -58,31 +58,31 @@ impl RollkitPayloadAttributes {
 }
 
 /// Errors that can occur during payload attributes validation
-/// 
+///
 /// This enum represents various validation errors that can occur when processing
 /// payload attributes for the Rollkit payload builder. Each variant corresponds
 /// to a specific validation failure scenario.
 #[derive(Debug, thiserror::Error)]
 pub enum PayloadAttributesError {
     /// Error when no transactions are provided in the payload attributes
-    /// 
+    ///
     /// This error occurs when the transaction list is empty, which is invalid
     /// since a payload must contain at least one transaction to be meaningful.
     #[error("No transactions provided")]
     EmptyTransactions,
-    
+
     /// Error when an invalid gas limit is specified
-    /// 
+    ///
     /// This error occurs when the gas limit is set to zero or an otherwise
     /// invalid value that would prevent proper transaction execution.
     #[error("Invalid gas limit")]
     InvalidGasLimit,
-    
+
     /// Error when transaction validation fails
-    /// 
+    ///
     /// This error occurs when individual transactions within the payload
     /// fail validation checks. The error message provides details about
     /// the specific validation failure.
     #[error("Transaction validation failed: {0}")]
     TransactionValidation(String),
-} 
+}

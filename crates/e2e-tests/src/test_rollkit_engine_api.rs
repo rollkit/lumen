@@ -8,7 +8,7 @@
 
 mod common;
 
-use alloy_primitives::{Address, B256, Bytes};
+use alloy_primitives::{Address, Bytes, B256};
 use alloy_rlp::Encodable;
 use alloy_rpc_types::engine::{ForkchoiceState, PayloadId};
 use eyre::Result;
@@ -47,21 +47,24 @@ impl EngineApiTestNode {
     pub async fn new() -> Result<Self> {
         let client = reqwest::Client::new();
         let rpc_url = DEFAULT_RPC_URL.to_string();
-        
-        let mut node = Self { 
-            rpc_url, 
-            client, 
-            mock_mode: false 
+
+        let mut node = Self {
+            rpc_url,
+            client,
+            mock_mode: false,
         };
-        
+
         // Check if real node is available
         if !node.check_node_availability().await {
-            println!("⚠ No real node available at {}, using mock mode", node.rpc_url);
+            println!(
+                "⚠ No real node available at {}, using mock mode",
+                node.rpc_url
+            );
             node.mock_mode = true;
         } else {
             println!("✓ Connected to real node at {}", node.rpc_url);
         }
-        
+
         Ok(node)
     }
 
@@ -111,7 +114,7 @@ impl EngineApiTestNode {
             .await?;
 
         let response_json: serde_json::Value = response.json().await?;
-        
+
         if let Some(error) = response_json.get("error") {
             return Err(eyre::eyre!("RPC Error: {}", error));
         }
@@ -122,46 +125,42 @@ impl EngineApiTestNode {
     /// Returns mock responses for testing without a real node
     fn get_mock_response(&self, method: &str) -> Result<serde_json::Value> {
         match method {
-            "engine_forkchoiceUpdatedV3" => {
-                Ok(json!({
-                    "payloadStatus": {
-                        "status": "VALID",
-                        "latestValidHash": format!("0x{:064x}", rand::random::<u64>()),
-                        "validationError": null
-                    },
-                    "payloadId": format!("0x{:016x}", rand::random::<u64>())
-                }))
-            }
-            "engine_getPayloadV3" => {
-                Ok(json!({
-                    "executionPayload": {
-                        "parentHash": format!("0x{:064x}", rand::random::<u64>()),
-                        "feeRecipient": TEST_TO_ADDRESS,
-                        "stateRoot": format!("0x{:064x}", rand::random::<u64>()),
-                        "receiptsRoot": format!("0x{:064x}", rand::random::<u64>()),
-                        "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                        "prevRandao": format!("0x{:064x}", rand::random::<u64>()),
-                        "blockNumber": "0x1",
-                        "gasLimit": "0x1c9c380",
-                        "gasUsed": "0xa410",
-                        "timestamp": format!("0x{:x}", chrono::Utc::now().timestamp()),
-                        "extraData": "0x",
-                        "baseFeePerGas": "0x7",
-                        "blockHash": format!("0x{:064x}", rand::random::<u64>()),
-                        "transactions": [
-                            "0xf86c808504a817c800825208941234567890123456789012345678901234567890880de0b6b3a764000080820a95a01b6b6d1c7b6f6b5a7b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6ba01b6b6d1c7b6f6b5a7b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
-                            "0xf86c018504a817c800825208941234567890123456789012345678901234567890880de0b6b3a764000080820a96a01b6b6d1c7b6f6b5a7b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6ba01b6b6d1c7b6f6b5a7b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b"
-                        ]
-                    },
-                    "blockValue": "0x0",
-                    "blobsBundle": {
-                        "commitments": [],
-                        "proofs": [],
-                        "blobs": []
-                    }
-                }))
-            }
-            _ => Ok(json!({"result": "mock_response"}))
+            "engine_forkchoiceUpdatedV3" => Ok(json!({
+                "payloadStatus": {
+                    "status": "VALID",
+                    "latestValidHash": format!("0x{:064x}", rand::random::<u64>()),
+                    "validationError": null
+                },
+                "payloadId": format!("0x{:016x}", rand::random::<u64>())
+            })),
+            "engine_getPayloadV3" => Ok(json!({
+                "executionPayload": {
+                    "parentHash": format!("0x{:064x}", rand::random::<u64>()),
+                    "feeRecipient": TEST_TO_ADDRESS,
+                    "stateRoot": format!("0x{:064x}", rand::random::<u64>()),
+                    "receiptsRoot": format!("0x{:064x}", rand::random::<u64>()),
+                    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "prevRandao": format!("0x{:064x}", rand::random::<u64>()),
+                    "blockNumber": "0x1",
+                    "gasLimit": "0x1c9c380",
+                    "gasUsed": "0xa410",
+                    "timestamp": format!("0x{:x}", chrono::Utc::now().timestamp()),
+                    "extraData": "0x",
+                    "baseFeePerGas": "0x7",
+                    "blockHash": format!("0x{:064x}", rand::random::<u64>()),
+                    "transactions": [
+                        "0xf86c808504a817c800825208941234567890123456789012345678901234567890880de0b6b3a764000080820a95a01b6b6d1c7b6f6b5a7b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6ba01b6b6d1c7b6f6b5a7b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
+                        "0xf86c018504a817c800825208941234567890123456789012345678901234567890880de0b6b3a764000080820a96a01b6b6d1c7b6f6b5a7b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6ba01b6b6d1c7b6f6b5a7b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b"
+                    ]
+                },
+                "blockValue": "0x0",
+                "blobsBundle": {
+                    "commitments": [],
+                    "proofs": [],
+                    "blobs": []
+                }
+            })),
+            _ => Ok(json!({"result": "mock_response"})),
         }
     }
 
@@ -177,7 +176,8 @@ impl EngineApiTestNode {
             json!([forkchoice_state])
         };
 
-        self.engine_rpc_call("engine_forkchoiceUpdatedV3", params).await
+        self.engine_rpc_call("engine_forkchoiceUpdatedV3", params)
+            .await
     }
 
     /// Gets a payload by ID
@@ -197,7 +197,7 @@ fn encode_transaction(tx: &TransactionSigned) -> Result<Bytes> {
 /// Test 1: Basic fork choice update
 async fn test_basic_fork_choice_update(node: &EngineApiTestNode) -> Result<()> {
     println!("Testing basic fork choice update...");
-    
+
     let forkchoice_state = ForkchoiceState {
         head_block_hash: B256::random(),
         safe_block_hash: B256::random(),
@@ -205,14 +205,17 @@ async fn test_basic_fork_choice_update(node: &EngineApiTestNode) -> Result<()> {
     };
 
     let result = node.fork_choice_updated_v3(forkchoice_state, None).await;
-    
+
     match result {
         Ok(response) => {
             println!("✓ Basic fork choice update succeeded: {:?}", response);
         }
         Err(e) => {
             // This is expected to fail with unknown hash in real node
-            println!("⚠ Fork choice update failed (expected for unknown hash): {}", e);
+            println!(
+                "⚠ Fork choice update failed (expected for unknown hash): {}",
+                e
+            );
         }
     }
 
@@ -222,15 +225,12 @@ async fn test_basic_fork_choice_update(node: &EngineApiTestNode) -> Result<()> {
 /// Test 2: Fork choice update with transactions
 async fn test_fork_choice_with_transactions(node: &EngineApiTestNode) -> Result<()> {
     println!("Testing fork choice update with transactions...");
-    
+
     // Create test transactions using common utilities
     let transactions = create_test_transactions(2, 0);
-    
+
     // Encode transactions
-    let tx_bytes: Result<Vec<Bytes>> = transactions
-        .iter()
-        .map(encode_transaction)
-        .collect();
+    let tx_bytes: Result<Vec<Bytes>> = transactions.iter().map(encode_transaction).collect();
     let tx_bytes = tx_bytes?;
 
     // Create payload attributes with transactions
@@ -258,22 +258,23 @@ async fn test_fork_choice_with_transactions(node: &EngineApiTestNode) -> Result<
         .await?;
 
     println!("✓ Fork choice update with transactions succeeded");
-    
+
     // Try to get the payload if we received a payload ID
     if let Some(payload_id_value) = result.get("payloadId") {
         if !payload_id_value.is_null() {
             let payload_id: PayloadId = serde_json::from_value(payload_id_value.clone())?;
-            
+
             match node.get_payload_v3(payload_id).await {
                 Ok(payload) => {
                     println!("✓ Successfully retrieved payload");
-                    
+
                     // Verify transactions are included
                     if let Some(execution_payload) = payload.get("executionPayload") {
                         if let Some(transactions) = execution_payload.get("transactions") {
-                            let tx_count = transactions.as_array().map(|arr| arr.len()).unwrap_or(0);
+                            let tx_count =
+                                transactions.as_array().map(|arr| arr.len()).unwrap_or(0);
                             println!("✓ Payload contains {} transactions", tx_count);
-                            
+
                             if tx_count >= 2 {
                                 println!("✓ Expected number of transactions found in payload");
                             }
@@ -310,10 +311,10 @@ async fn test_rollkit_engine_api_integration() -> Result<()> {
     println!("🚀 Rollkit Engine API Integration Test");
     println!("=====================================");
     println!("This test verifies Engine API compatibility with transaction passthrough");
-    
+
     // Initialize test node
     let node = EngineApiTestNode::new().await?;
-    
+
     let mut passed = 0;
     let mut failed = 0;
 
@@ -347,17 +348,19 @@ async fn test_rollkit_engine_api_integration() -> Result<()> {
     println!("✅ Passed: {}", passed);
     println!("❌ Failed: {}", failed);
     println!("📈 Total:  {}", passed + failed);
-    
+
     if failed == 0 {
         println!("🎉 All Engine API tests passed!");
-        println!("The Rollkit payload builder successfully handles Engine API calls with transactions.");
+        println!(
+            "The Rollkit payload builder successfully handles Engine API calls with transactions."
+        );
     } else {
         println!("⚠️ Some tests failed - this may be expected if no real node is running");
         println!("Mock mode tests should still pass to verify the basic functionality");
     }
-    
+
     // At least one test should pass to consider this successful
     assert!(passed > 0, "At least one Engine API test should pass");
-    
+
     Ok(())
-} 
+}

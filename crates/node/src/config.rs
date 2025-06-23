@@ -20,10 +20,7 @@ impl Default for RollkitPayloadBuilderConfig {
 
 impl RollkitPayloadBuilderConfig {
     /// Creates a new instance of RollkitPayloadBuilderConfig
-    pub fn new(
-        max_transactions: usize,
-        min_gas_price: u64,
-    ) -> Self {
+    pub fn new(max_transactions: usize, min_gas_price: u64) -> Self {
         Self {
             max_transactions,
             min_gas_price,
@@ -53,4 +50,4 @@ pub enum ConfigError {
     #[error("Invalid min gas price value")]
     /// Invalid minimum gas price value.
     InvalidMinGasPrice,
-} 
+}

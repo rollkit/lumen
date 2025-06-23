@@ -23,7 +23,6 @@ reth-consensus.workspace = true
 reth-tasks.workspace = true
 reth-tracing.workspace = true
 reth-node-builder.workspace = true
-reth-chainspec.workspace = true
 reth-ethereum-payload-builder.workspace = true
 reth-payload-primitives.workspace = true
 reth-primitives.workspace = true
