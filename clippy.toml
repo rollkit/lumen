@@ -1,0 +1,2 @@
+max-cognitive-complexity-threshold = 20
+warn-on-all-wildcard-imports = true

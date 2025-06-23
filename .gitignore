@@ -1,0 +1,57 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo lock file (for libraries, include for binaries)
+# Cargo.lock
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test and benchmark artifacts
+tarpaulin-report.html
+criterion/
+
+# Documentation
+/doc/
+
+# Temporary files
+*.tmp
+*.log
+
+# Environment files
+.env
+.env.local
+
+# Database files
+*.db
+*.db-journal
+
+# Reth specific
+/data/
+/datadir/
+/db/
+chaindata/
+
+# JWT secrets
+*.jwt
+jwt.hex
+
+# Coverage reports
+lcov.info
+coverage/
+
+# Profiling
+perf.data
+perf.data.old
+flamegraph.svg
+*.profdata
+
+# OS specific
+Thumbs.db
