@@ -5,7 +5,9 @@
 //! - Node configuration
 //! - RPC interfaces
 
+/// Builder module for payload construction and related utilities.
 pub mod builder;
+/// Rollkit payload builder implementation
 pub mod config;
 
 // Re-export public types

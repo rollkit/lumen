@@ -16,6 +16,7 @@ path = "src/main.rs"
 # Core lumen crates
 lumen-node = { path = "../../crates/node" }
 lumen-common = { path = "../../crates/common" }
+lumen-rollkit = { path = "../../crates/rollkit" }
 
 # Reth CLI and core dependencies
 reth-cli-util.workspace = true
@@ -23,12 +24,29 @@ reth-ethereum-cli.workspace = true
 reth-ethereum = { workspace = true, features = ["node", "cli", "pool"] }
 reth-node-builder.workspace = true
 reth-chainspec.workspace = true
+reth-primitives-traits.workspace = true
+reth-engine-local.workspace = true
+reth-basic-payload-builder.workspace = true
+reth-ethereum-payload-builder.workspace = true
+reth-payload-builder.workspace = true
+reth-revm.workspace = true
+reth-provider.workspace = true
+reth-trie-db.workspace = true
+
+# Alloy dependencies
+alloy-network.workspace = true
+alloy-rpc-types.workspace = true
+alloy-primitives.workspace = true
+alloy-eips.workspace = true
+
 
 # Core dependencies
 eyre.workspace = true
 tracing.workspace = true
 tokio = { workspace = true, features = ["full"] }
 clap = { workspace = true, features = ["derive", "env"] }
+serde = { workspace = true, features = ["derive"] }
+thiserror.workspace = true
 
 [lints]
 workspace = true
