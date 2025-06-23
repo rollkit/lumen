@@ -25,8 +25,8 @@ impl<Client> RollkitPayloadBuilder<Client>
 where
     Client: StateProviderFactory + HeaderProvider<Header = Header> + Send + Sync + 'static,
 {
-    /// Creates a new instance of RollkitPayloadBuilder
-    pub fn new(client: Arc<Client>, evm_config: EthEvmConfig) -> Self {
+    /// Creates a new instance of `RollkitPayloadBuilder`
+    pub const fn new(client: Arc<Client>, evm_config: EthEvmConfig) -> Self {
         Self { client, evm_config }
     }
 
@@ -112,15 +112,11 @@ where
             // Execute the transaction
             match builder.execute_transaction(recovered_tx) {
                 Ok(gas_used) => {
-                    eprintln!(
-                        "Transaction {} executed successfully, gas used: {}",
-                        i, gas_used
-                    );
+                    eprintln!("Transaction {i} executed successfully, gas used: {gas_used}");
                 }
                 Err(err) => {
                     // Log the error but continue with other transactions
-                    eprintln!("Transaction {} execution failed: {:?}", i, err);
-                    continue;
+                    eprintln!("Transaction {i} execution failed: {err:?}");
                 }
             }
         }
@@ -150,7 +146,7 @@ where
 }
 
 /// Creates a new payload builder service
-pub fn create_payload_builder_service<Client>(
+pub const fn create_payload_builder_service<Client>(
     client: Arc<Client>,
     evm_config: EthEvmConfig,
 ) -> Option<RollkitPayloadBuilder<Client>>

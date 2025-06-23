@@ -62,13 +62,9 @@ static ALLOC: reth_cli_util::allocator::Allocator = reth_cli_util::allocator::ne
 
 /// Rollkit-specific command line arguments
 #[derive(Debug, Clone, Parser, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct RollkitArgs {}
 
-impl Default for RollkitArgs {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 /// Rollkit payload attributes that support passing transactions via Engine API
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -503,12 +499,11 @@ where
         })
         .join()
         .map_err(|_| {
-            PayloadBuilderError::other(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            PayloadBuilderError::other(std::io::Error::other(
                 "Thread join failed",
             ))
         })?
-        .map_err(|e| PayloadBuilderError::other(e))?;
+        .map_err(PayloadBuilderError::other)?;
 
         info!(
             "Rollkit engine payload builder: built block with {} transactions, gas used: {}",
@@ -570,12 +565,11 @@ where
         })
         .join()
         .map_err(|_| {
-            PayloadBuilderError::other(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            PayloadBuilderError::other(std::io::Error::other(
                 "Thread join failed",
             ))
         })?
-        .map_err(|e| PayloadBuilderError::other(e))?;
+        .map_err(PayloadBuilderError::other)?;
 
         let gas_used = sealed_block.gas_used;
         Ok(EthBuiltPayload::new(

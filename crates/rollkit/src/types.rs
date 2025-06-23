@@ -22,8 +22,8 @@ pub struct RollkitPayloadAttributes {
 }
 
 impl RollkitPayloadAttributes {
-    /// Creates a new instance of RollkitPayloadAttributes
-    pub fn new(
+    /// Creates a new instance of `RollkitPayloadAttributes`
+    pub const fn new(
         transactions: Vec<TransactionSigned>,
         gas_limit: Option<u64>,
         timestamp: u64,
@@ -44,7 +44,7 @@ impl RollkitPayloadAttributes {
     }
 
     /// Validates the payload attributes
-    pub fn validate(&self) -> Result<(), PayloadAttributesError> {
+    pub const fn validate(&self) -> Result<(), PayloadAttributesError> {
         // For rollkit, empty transactions are allowed (empty blocks are valid)
 
         if let Some(gas_limit) = self.gas_limit {
