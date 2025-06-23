@@ -1,18 +1,10 @@
-//! Rollkit payload builder for Reth integration.
+//! Rollkit-specific types and integration
 //!
-//! This crate provides a complete rollkit integration for Reth, including:
-//! - Custom payload builder that supports transactions via Engine API
-//! - Rollkit-specific node types and configurations
-//! - Engine API validation and processing for rollkit blocks
+//! This crate provides Rollkit-specific functionality including:
+//! - Custom payload attributes for Rollkit
+//! - Rollkit-specific types and traits
 
-mod builder;
-mod config;
-mod types;
+pub mod types;
 
-#[cfg(test)]
-mod tests;
-
-// Re-export all public types and functions
-pub use builder::{create_payload_builder_service, RollkitPayloadBuilder};
-pub use config::{ConfigError, RollkitPayloadBuilderConfig};
-pub use types::{PayloadAttributesError, RollkitPayloadAttributes}; 
+// Re-export public types
+pub use types::{PayloadAttributesError, RollkitPayloadAttributes};

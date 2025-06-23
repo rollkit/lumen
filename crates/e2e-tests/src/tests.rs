@@ -1,6 +1,4 @@
-use crate::{
-    types::{RollkitPayloadAttributes, PayloadAttributesError},
-};
+use lumen_rollkit::{RollkitPayloadAttributes, PayloadAttributesError};
 use alloy_primitives::{Address, B256};
 
 #[cfg(test)]

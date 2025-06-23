@@ -1,4 +1,4 @@
-use crate::types::RollkitPayloadAttributes;
+use lumen_rollkit::RollkitPayloadAttributes;
 use reth_primitives::{SealedBlock, SealedHeader, Header};
 use reth_provider::{StateProviderFactory, HeaderProvider};
 use reth_evm::{ConfigureEvm, NextBlockEnvAttributes};

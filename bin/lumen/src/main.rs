@@ -48,10 +48,8 @@ use reth_payload_builder::{EthBuiltPayload, EthPayloadBuilderAttributes, Payload
 use reth_provider::HeaderProvider;
 use reth_revm::cached::CachedReads;
 use reth_trie_db::MerklePatriciaTrie;
-use rollkit_reth::{
-    PayloadAttributesError, RollkitPayloadAttributes, RollkitPayloadBuilder,
-    RollkitPayloadBuilderConfig,
-};
+use lumen_node::{RollkitPayloadBuilder, RollkitPayloadBuilderConfig};
+use lumen_rollkit::{PayloadAttributesError, RollkitPayloadAttributes};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use thiserror::Error;

@@ -50,16 +50,16 @@ make test
 
 ## Usage
 
-### Running the Rollkit-Reth Node
+### Running the Lumen Node
 
 Basic usage:
 ```bash
-./target/release/rollkit-reth node
+./target/release/lumen node
 ```
 
 With custom configuration:
 ```bash
-./target/release/rollkit-reth node \
+./target/release/lumen node \
     --chain <CHAIN_SPEC> \
     --datadir <DATA_DIR> \
     --http \
@@ -96,19 +96,39 @@ When using the Engine API, you can include transactions in the payload attribute
 
 ## Architecture
 
+### Modular Design
+
+Lumen follows a modular architecture similar to Odyssey, with clear separation of concerns:
+
+- **`bin/lumen`**: The main executable binary
+- **`crates/common`**: Shared utilities and constants used across all crates
+- **`crates/node`**: Core node implementation including the payload builder
+- **`crates/rollkit`**: Rollkit-specific types and integration logic
+- **`crates/e2e-tests`**: Comprehensive end-to-end tests
+
+This modular design allows for:
+- Better code organization and maintainability
+- Easier testing of individual components
+- Clear separation between Rollkit-specific and general node logic
+- Reusable components for other projects
+
 ### Components
 
-1. **RollkitPayloadBuilder** (`crates/rollkit/src/builder.rs`)
+1. **RollkitPayloadBuilder** (`crates/node/src/builder.rs`)
    - Handles payload construction with transactions from Engine API
    - Manages state execution and block assembly
 
-2. **RollkitEngineTypes** (`crates/rollkit/bin/src/main.rs`)
+2. **RollkitEngineTypes** (`bin/lumen/src/main.rs`)
    - Custom Engine API types supporting transaction attributes
    - Payload validation and attribute processing
 
-3. **RollkitEngineValidator** (`crates/rollkit/bin/src/main.rs`)
+3. **RollkitEngineValidator** (`bin/lumen/src/main.rs`)
    - Modified validator for Rollkit-specific requirements
    - Bypasses certain validations while maintaining security
+
+4. **Rollkit Types** (`crates/rollkit/src/types.rs`)
+   - Rollkit-specific payload attributes and types
+   - Transaction encoding/decoding utilities
 
 ### Transaction Flow
 
@@ -140,18 +160,35 @@ All standard Reth configuration options are supported. Key options for Rollkit i
 
 ```
 lumen/
+├── bin/
+│   └── lumen/                  # Main binary
+│       ├── Cargo.toml
+│       └── src/
+│           └── main.rs         # Binary with Engine API integration
 ├── crates/
-│   └── rollkit/
-│       ├── src/
-│       │   ├── lib.rs          # Library root
-│       │   ├── builder.rs      # Payload builder implementation
-│       │   ├── config.rs       # Configuration types
-│       │   ├── types.rs        # Rollkit-specific types
-│       │   └── tests.rs        # Unit tests
-│       ├── tests/              # Integration tests
-│       └── bin/
-│           └── src/
-│               └── main.rs     # Binary with Engine API integration
+│   ├── common/                 # Shared utilities and constants
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       └── constants.rs
+│   ├── node/                   # Core node implementation
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       ├── builder.rs     # Payload builder implementation
+│   │       └── config.rs      # Configuration types
+│   ├── rollkit/                # Rollkit-specific types
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       └── types.rs       # Rollkit payload attributes
+│   └── e2e-tests/              # End-to-end tests
+│       ├── Cargo.toml
+│       └── src/
+│           ├── lib.rs
+│           └── *.rs            # Test files
+├── etc/                        # Configuration files
+│   └── lumen-genesis.json      # Genesis configuration
 ├── Cargo.toml                  # Workspace configuration
 ├── Makefile                    # Build automation
 └── README.md                   # This file
@@ -200,7 +237,7 @@ make run-dev
 
 Enable detailed logging:
 ```bash
-RUST_LOG=debug,rollkit=trace ./target/release/rollkit-reth node
+RUST_LOG=debug,lumen=trace ./target/release/lumen node
 ```
 
 ## Contributing

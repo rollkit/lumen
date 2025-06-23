@@ -1,0 +1,51 @@
+[package]
+name = "lumen"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+description = "Lumen node binary"
+
+[[bin]]
+name = "lumen"
+path = "src/main.rs"
+
+[dependencies]
+# Core lumen crates
+lumen-node = { path = "../../crates/node" }
+lumen-common = { path = "../../crates/common" }
+
+# Reth CLI and core dependencies
+reth-cli-util.workspace = true
+reth-ethereum-cli.workspace = true
+reth-ethereum = { workspace = true, features = ["node", "cli", "pool"] }
+reth-node-builder.workspace = true
+reth-chainspec.workspace = true
+
+# Core dependencies
+eyre.workspace = true
+tracing.workspace = true
+tokio = { workspace = true, features = ["full"] }
+clap = { workspace = true, features = ["derive", "env"] }
+
+[lints]
+workspace = true
+
+[features]
+default = ["jemalloc"]
+
+jemalloc = ["reth-cli-util/jemalloc", "reth-ethereum-cli/jemalloc"]
+jemalloc-prof = ["reth-cli-util/jemalloc-prof"]
+tracy-allocator = ["reth-cli-util/tracy-allocator"]
+
+asm-keccak = ["reth-ethereum-cli/asm-keccak"]
+
+dev = ["reth-ethereum-cli/dev", "reth-ethereum/arbitrary"]
+
+min-error-logs = ["tracing/release_max_level_error"]
+min-warn-logs = ["tracing/release_max_level_warn"]
+min-info-logs = ["tracing/release_max_level_info"]
+min-debug-logs = ["tracing/release_max_level_debug"]
+min-trace-logs = ["tracing/release_max_level_trace"]

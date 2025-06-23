@@ -16,7 +16,8 @@ use reth_provider::test_utils::{MockEthProvider, ExtendedAccount};
 use alloy_consensus::transaction::SignerRecoverable;
 use tempfile::TempDir;
 
-use rollkit_reth::{RollkitPayloadBuilder, RollkitPayloadAttributes};
+use lumen_node::RollkitPayloadBuilder;
+use lumen_rollkit::RollkitPayloadAttributes;
 
 // Test constants
 pub const TEST_CHAIN_ID: u64 = 1234;

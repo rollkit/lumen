@@ -1,0 +1,17 @@
+[package]
+name = "lumen-common"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+description = "Common utilities and constants for Lumen"
+
+[dependencies]
+# Core dependencies
+serde = { workspace = true, features = ["derive"] }
+tracing.workspace = true
+
+[lints]
+workspace = true

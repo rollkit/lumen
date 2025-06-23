@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["crates/rollkit"]
+members = [
+    "bin/lumen",
+    "crates/common",
+    "crates/node",
+    "crates/rollkit",
+    "crates/e2e-tests",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,52 +19,52 @@ authors = ["Rollkit Contributors"]
 
 [workspace.dependencies]
 # Reth dependencies - Using the latest stable versions
-reth = { version = "1.1.3", default-features = false }
-reth-cli-util = { version = "1.1.3", default-features = false }
-reth-ethereum-cli = { version = "1.1.3", default-features = false }
-reth-ethereum = { version = "1.1.3", default-features = false }
-reth-node-builder = { version = "1.1.3", default-features = false }
-reth-chainspec = { version = "1.1.3", default-features = false }
-reth-ethereum-payload-builder = { version = "1.1.3", default-features = false }
-reth-payload-primitives = { version = "1.1.3", default-features = false }
-reth-primitives = { version = "1.1.3", default-features = false }
-reth-primitives-traits = { version = "1.1.3", default-features = false }
-reth-node-api = { version = "1.1.3", default-features = false }
-reth-provider = { version = "1.1.3", default-features = false }
-reth-payload-builder = { version = "1.1.3", default-features = false }
-reth-basic-payload-builder = { version = "1.1.3", default-features = false }
-reth-engine-local = { version = "1.1.3", default-features = false }
-reth-revm = { version = "1.1.3", default-features = false }
-reth-trie-db = { version = "1.1.3", default-features = false }
-reth-node-types = { version = "1.1.3", default-features = false }
-reth-payload-builder-primitives = { version = "1.1.3", default-features = false }
-reth-execution-types = { version = "1.1.3", default-features = false }
-reth-evm-ethereum = { version = "1.1.3", default-features = false }
-reth-evm = { version = "1.1.3", default-features = false }
-reth-errors = { version = "1.1.3", default-features = false }
-reth-node-core = { version = "1.1.3", default-features = false }
-reth-rpc-builder = { version = "1.1.3", default-features = false }
-reth-rpc-api = { version = "1.1.3", default-features = false }
-reth-rpc-engine-api = { version = "1.1.3", default-features = false }
-reth-engine-primitives = { version = "1.1.3", default-features = false }
-reth-ethereum-primitives = { version = "1.1.3", default-features = false }
+reth = { version = "1.1", default-features = false }
+reth-cli-util = { version = "1.1", default-features = false }
+reth-ethereum-cli = { version = "1.1", default-features = false }
+reth-ethereum = { version = "1.1", default-features = false }
+reth-node-builder = { version = "1.1", default-features = false }
+reth-chainspec = { version = "1.1", default-features = false }
+reth-ethereum-payload-builder = { version = "1.1", default-features = false }
+reth-payload-primitives = { version = "1.1", default-features = false }
+reth-primitives = { version = "1.1", default-features = false }
+reth-primitives-traits = { version = "1.1", default-features = false }
+reth-node-api = { version = "1.1", default-features = false }
+reth-provider = { version = "1.1", default-features = false }
+reth-payload-builder = { version = "1.1", default-features = false }
+reth-basic-payload-builder = { version = "1.1", default-features = false }
+reth-engine-local = { version = "1.1", default-features = false }
+reth-revm = { version = "1.1", default-features = false }
+reth-trie-db = { version = "1.1", default-features = false }
+reth-node-types = { version = "1.1", default-features = false }
+reth-payload-builder-primitives = { version = "1.1", default-features = false }
+reth-execution-types = { version = "1.1", default-features = false }
+reth-evm-ethereum = { version = "1.1", default-features = false }
+reth-evm = { version = "1.1", default-features = false }
+reth-errors = { version = "1.1", default-features = false }
+reth-node-core = { version = "1.1", default-features = false }
+reth-rpc-builder = { version = "1.1", default-features = false }
+reth-rpc-api = { version = "1.1", default-features = false }
+reth-rpc-engine-api = { version = "1.1", default-features = false }
+reth-engine-primitives = { version = "1.1", default-features = false }
+reth-ethereum-primitives = { version = "1.1", default-features = false }
 
 # Test dependencies
-reth-testing-utils = { version = "1.1.3", default-features = false }
-reth-db = { version = "1.1.3", default-features = false }
-reth-transaction-pool = { version = "1.1.3", default-features = false }
-reth-consensus = { version = "1.1.3", default-features = false }
-reth-tasks = { version = "1.1.3", default-features = false }
-reth-tracing = { version = "1.1.3", default-features = false }
+reth-testing-utils = { version = "1.1", default-features = false }
+reth-db = { version = "1.1", default-features = false }
+reth-transaction-pool = { version = "1.1", default-features = false }
+reth-consensus = { version = "1.1", default-features = false }
+reth-tasks = { version = "1.1", default-features = false }
+reth-tracing = { version = "1.1", default-features = false }
 
 # Alloy dependencies
-alloy-rpc-types = { version = "0.7.3", default-features = false }
-alloy-rpc-types-engine = { version = "0.7.3", default-features = false }
+alloy-rpc-types = { version = "0.7", default-features = false }
+alloy-rpc-types-engine = { version = "0.7", default-features = false }
 alloy-primitives = { version = "0.8", default-features = false }
-alloy-eips = { version = "0.7.3", default-features = false }
-alloy-consensus = { version = "0.7.3", default-features = false }
+alloy-eips = { version = "0.7", default-features = false }
+alloy-consensus = { version = "0.7", default-features = false }
 alloy-rlp = { version = "0.3", default-features = false }
-alloy-genesis = { version = "0.7.3", default-features = false }
+alloy-genesis = { version = "0.7", default-features = false }
 
 # Core dependencies
 eyre = "0.6"

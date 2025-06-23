@@ -2,7 +2,7 @@
 
 # Build configuration
 CARGO = cargo
-BINARY_NAME = rollkit-reth
+BINARY_NAME = lumen
 TARGET_DIR = target
 
 # Default target
@@ -15,11 +15,11 @@ help:
 
 ##@ Building
 
-## build: Build the rollkit-reth binary in release mode
+## build: Build the lumen binary in release mode
 build:
 	$(CARGO) build --release --bin $(BINARY_NAME)
 
-## build-dev: Build the rollkit-reth binary in debug mode
+## build-dev: Build the lumen binary in debug mode
 build-dev:
 	$(CARGO) build --bin $(BINARY_NAME)
 
@@ -27,11 +27,11 @@ build-dev:
 
 ## test: Run all tests
 test:
-	$(CARGO) test --all
+	$(CARGO) test --workspace
 
 ## test-verbose: Run all tests with verbose output
 test-verbose:
-	$(CARGO) test --all -- --nocapture
+	$(CARGO) test --workspace -- --nocapture
 
 ## test-unit: Run unit tests only
 test-unit:
@@ -39,11 +39,11 @@ test-unit:
 
 ## test-integration: Run integration tests only  
 test-integration:
-	$(CARGO) test --test '*'
+	$(CARGO) test -p lumen-e2e-tests
 
 ##@ Development
 
-## run: Run the rollkit-reth node with default settings
+## run: Run the lumen node with default settings
 run: build-dev
 	./$(TARGET_DIR)/debug/$(BINARY_NAME) node
 
@@ -65,7 +65,7 @@ lint:
 
 ## check: Run cargo check
 check:
-	$(CARGO) check --all
+	$(CARGO) check --workspace
 
 ##@ Maintenance
 
@@ -90,3 +90,21 @@ doc:
 ## doc-all: Build documentation including dependencies
 doc-all:
 	$(CARGO) doc --open
+
+##@ Workspace Management
+
+## build-all: Build all workspace members
+build-all:
+	$(CARGO) build --workspace --release
+
+## test-node: Test only the node crate
+test-node:
+	$(CARGO) test -p lumen-node
+
+## test-rollkit: Test only the rollkit crate
+test-rollkit:
+	$(CARGO) test -p lumen-rollkit
+
+## test-common: Test only the common crate
+test-common:
+	$(CARGO) test -p lumen-common
