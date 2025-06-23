@@ -1,22 +1,5 @@
 # CODEOWNERS file for automatic PR assignment
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Global owners (fallback)
-* @lumen-maintainers
-
-# Core crates
-/crates/node/ @lumen-node-team
-/crates/rollkit/ @lumen-rollkit-team
-/crates/common/ @lumen-core-team
-
-# E2E tests
-/crates/e2e-tests/ @lumen-qa-team
-
-# CI/CD
-/.github/ @lumen-devops-team
-/Dockerfile* @lumen-devops-team
-/Makefile @lumen-devops-team
-
-# Documentation
-/README.md @lumen-docs-team
-/LICENSE* @lumen-legal-team
+# Global owner
+* @rollkit/binary-builders
