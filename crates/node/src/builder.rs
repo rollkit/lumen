@@ -88,18 +88,18 @@ where
             .map_err(|err| PayloadBuilderError::Internal(err.into()))?;
 
         // Execute transactions
-        eprintln!(
-            "Rollkit payload builder: executing {} transactions",
-            attributes.transactions.len()
+        tracing::info!(
+            transaction_count = attributes.transactions.len(),
+            "Rollkit payload builder: executing transactions"
         );
         for (i, tx) in attributes.transactions.iter().enumerate() {
-            eprintln!(
-                "Transaction {}: hash={:?}, nonce={}, gas_price={:?}, gas_limit={}",
-                i,
-                tx.hash(),
-                tx.nonce(),
-                tx.gas_price(),
-                tx.gas_limit()
+            tracing::debug!(
+            index = i,
+            hash = ?tx.hash(),
+            nonce = tx.nonce(),
+            gas_price = ?tx.gas_price(),
+            gas_limit = tx.gas_limit(),
+            "Processing transaction"
             );
 
             // Convert to recovered transaction for execution
@@ -112,11 +112,11 @@ where
             // Execute the transaction
             match builder.execute_transaction(recovered_tx) {
                 Ok(gas_used) => {
-                    eprintln!("Transaction {i} executed successfully, gas used: {gas_used}");
+                    tracing::debug!(index = i, gas_used, "Transaction executed successfully");
                 }
                 Err(err) => {
                     // Log the error but continue with other transactions
-                    eprintln!("Transaction {i} execution failed: {err:?}");
+                    tracing::warn!(index = i, error = ?err, "Transaction execution failed");
                 }
             }
         }
@@ -132,12 +132,12 @@ where
             .map_err(PayloadBuilderError::other)?;
 
         let sealed_block = block.sealed_block().clone();
-        eprintln!(
-            "Rollkit payload builder: built block number={}, hash={:?}, tx_count={}, gas_used={}",
-            sealed_block.number,
-            sealed_block.hash(),
-            sealed_block.transaction_count(),
-            sealed_block.gas_used
+        tracing::info!(
+                    block_number = sealed_block.number,
+                    block_hash = ?sealed_block.hash(),
+                    transaction_count = sealed_block.transaction_count(),
+                    gas_used = sealed_block.gas_used,
+                    "Rollkit payload builder: built block"
         );
 
         // Return the sealed block

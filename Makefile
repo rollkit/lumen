@@ -38,8 +38,8 @@ test-unit:
 	$(CARGO) test --lib
 
 ## test-integration: Run integration tests only
-# test-integration:
-# 	$(CARGO) test -p lumen-e2e-tests
+test-integration:
+	$(CARGO) test -p lumen-tests
 
 ##@ Development
 

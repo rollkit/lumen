@@ -7,7 +7,7 @@
 
 /// Builder module for payload construction and related utilities.
 pub mod builder;
-/// Rollkit payload builder implementation
+/// Configuration types and validation for the Rollkit payload builder
 pub mod config;
 
 // Re-export public types

@@ -33,12 +33,12 @@ jobs:
         run: |
           cargo build --profile release --locked --bin lumen
 
-        # - name: Run E2E tests
-        # run: |
-        #   cargo nextest run \
-        #     --locked \
-        #     --workspace \
-        #     -E "package(lumen-e2e-tests)" \
-        #     --no-capture
-        # env:
-        #   RUST_LOG: debug
+      - name: Run E2E tests
+        run: |
+          cargo nextest run \
+            --locked \
+            --workspace \
+            -E "package(lumen-tests)" \
+            --no-capture
+        env:
+          RUST_LOG: debug

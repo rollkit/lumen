@@ -62,7 +62,15 @@ static ALLOC: reth_cli_util::allocator::Allocator = reth_cli_util::allocator::ne
 
 /// Rollkit-specific command line arguments
 #[derive(Debug, Clone, Parser, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct RollkitArgs {}
+pub struct RollkitArgs {
+    /// Enable Rollkit mode for the node (enabled by default)
+    #[arg(
+        long = "rollkit.enable",
+        default_value = "true",
+        help = "Enable Rollkit integration for transaction processing via Engine API"
+    )]
+    pub enable_rollkit: bool,
+}
 
 /// Rollkit payload attributes that support passing transactions via Engine API
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -491,12 +499,9 @@ where
 
         // Build the payload using the rollkit payload builder - use spawn_blocking for async work
         let rollkit_builder = self.rollkit_builder.clone();
-        let sealed_block = std::thread::spawn(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(rollkit_builder.build_payload(rollkit_attrs))
+        let sealed_block = tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(rollkit_builder.build_payload(rollkit_attrs))
         })
-        .join()
-        .map_err(|_| PayloadBuilderError::other(std::io::Error::other("Thread join failed")))?
         .map_err(PayloadBuilderError::other)?;
 
         info!(
@@ -553,17 +558,14 @@ where
 
         // Build empty payload - use spawn_blocking for async work
         let rollkit_builder = self.rollkit_builder.clone();
-        let sealed_block = std::thread::spawn(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(rollkit_builder.build_payload(rollkit_attrs))
+        let sealed_block = tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(rollkit_builder.build_payload(rollkit_attrs))
         })
-        .join()
-        .map_err(|_| PayloadBuilderError::other(std::io::Error::other("Thread join failed")))?
         .map_err(PayloadBuilderError::other)?;
 
         let gas_used = sealed_block.gas_used;
         Ok(EthBuiltPayload::new(
-            PayloadId::new([0u8; 8]),
+            attributes.payload_id(), //TODO: make sure this works
             Arc::new(sealed_block),
             U256::from(gas_used),
             None,
