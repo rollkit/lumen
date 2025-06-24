@@ -3,7 +3,7 @@
 //! This test suite tests the Engine API integration by:
 //! 1. Attempting to connect to a real Rollkit node
 //! 2. Falling back to mock mode if no node is available
-//! 3. Testing engine_forkchoiceUpdatedV3 with transactions
+//! 3. Testing `engine_forkchoiceUpdatedV3` with transactions
 //! 4. Verifying payload building and retrieval
 
 use crate::common;
@@ -55,14 +55,14 @@ impl EngineApiTestNode {
         };
 
         // Check if real node is available
-        if !node.check_node_availability().await {
+        if node.check_node_availability().await {
+            println!("✓ Connected to real node at {}", node.rpc_url);
+        } else {
             println!(
                 "⚠ No real node available at {}, using mock mode",
                 node.rpc_url
             );
             node.mock_mode = true;
-        } else {
-            println!("✓ Connected to real node at {}", node.rpc_url);
         }
 
         Ok(node)
@@ -164,7 +164,7 @@ impl EngineApiTestNode {
         }
     }
 
-    /// Calls engine_forkchoiceUpdatedV3 with payload attributes
+    /// Calls `engine_forkchoiceUpdatedV3` with payload attributes
     pub async fn fork_choice_updated_v3(
         &self,
         forkchoice_state: ForkchoiceState,
@@ -208,13 +208,12 @@ async fn test_basic_fork_choice_update(node: &EngineApiTestNode) -> Result<()> {
 
     match result {
         Ok(response) => {
-            println!("✓ Basic fork choice update succeeded: {:?}", response);
+            println!("✓ Basic fork choice update succeeded: {response:?}");
         }
         Err(e) => {
             // This is expected to fail with unknown hash in real node
             println!(
-                "⚠ Fork choice update failed (expected for unknown hash): {}",
-                e
+                "⚠ Fork choice update failed (expected for unknown hash): {e}"
             );
         }
     }
@@ -273,7 +272,7 @@ async fn test_fork_choice_with_transactions(node: &EngineApiTestNode) -> Result<
                         if let Some(transactions) = execution_payload.get("transactions") {
                             let tx_count =
                                 transactions.as_array().map(|arr| arr.len()).unwrap_or(0);
-                            println!("✓ Payload contains {} transactions", tx_count);
+                            println!("✓ Payload contains {tx_count} transactions");
 
                             if tx_count >= 2 {
                                 println!("✓ Expected number of transactions found in payload");
@@ -282,7 +281,7 @@ async fn test_fork_choice_with_transactions(node: &EngineApiTestNode) -> Result<
                     }
                 }
                 Err(e) => {
-                    println!("⚠ Failed to retrieve payload: {}", e);
+                    println!("⚠ Failed to retrieve payload: {e}");
                 }
             }
         }
@@ -326,7 +325,7 @@ async fn test_rollkit_engine_api_integration() -> Result<()> {
             passed += 1;
         }
         Err(e) => {
-            println!("❌ Test 1 FAILED: {}", e);
+            println!("❌ Test 1 FAILED: {e}");
             failed += 1;
         }
     }
@@ -338,15 +337,15 @@ async fn test_rollkit_engine_api_integration() -> Result<()> {
             passed += 1;
         }
         Err(e) => {
-            println!("❌ Test 2 FAILED: {}", e);
+            println!("❌ Test 2 FAILED: {e}");
             failed += 1;
         }
     }
 
     // Results
     println!("\n=== 📊 Test Results ===");
-    println!("✅ Passed: {}", passed);
-    println!("❌ Failed: {}", failed);
+    println!("✅ Passed: {passed}");
+    println!("❌ Failed: {failed}");
     println!("📈 Total:  {}", passed + failed);
 
     if failed == 0 {

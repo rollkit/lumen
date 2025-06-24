@@ -74,7 +74,7 @@ async fn test_payload_with_transactions() -> Result<()> {
             );
         }
         Ok(Err(e)) => {
-            panic!("Payload building failed: {:?}", e);
+            panic!("Payload building failed: {e:?}");
         }
         Err(_) => {
             panic!("Payload building timed out");
@@ -108,8 +108,7 @@ async fn test_variable_transaction_counts() -> Result<()> {
         let result = fixture.builder.build_payload(payload_attrs).await;
         assert!(
             result.is_ok(),
-            "Payload with {} transactions should build successfully",
-            tx_count
+            "Payload with {tx_count} transactions should build successfully"
         );
 
         let sealed_block = result.unwrap();
@@ -126,7 +125,7 @@ async fn test_variable_transaction_counts() -> Result<()> {
             );
         }
 
-        println!("✓ Built payload with {} transactions", tx_count);
+        println!("✓ Built payload with {tx_count} transactions");
     }
 
     println!("✓ Variable transaction counts test passed");
@@ -173,7 +172,7 @@ async fn test_payload_building_error_handling() -> Result<()> {
             );
         }
         Err(e) => {
-            println!("✓ Large transaction batch rejected appropriately: {}", e);
+            println!("✓ Large transaction batch rejected appropriately: {e}");
         }
     }
 
@@ -189,7 +188,7 @@ async fn test_payload_building_error_handling() -> Result<()> {
     let result = fixture.builder.build_payload(attrs_large_timestamp).await;
     match result {
         Ok(_) => println!("✓ Large timestamp handled gracefully"),
-        Err(e) => println!("✓ Large timestamp rejected appropriately: {}", e),
+        Err(e) => println!("✓ Large timestamp rejected appropriately: {e}"),
     }
 
     println!("✓ Error handling tests completed");
@@ -233,7 +232,7 @@ async fn test_payload_building_performance() -> Result<()> {
                 assert_eq!(sealed_block.number, 1, "Block number should be correct");
             }
             Err(e) => {
-                println!("✗ Batch size {} failed: {:?}", batch_size, e);
+                println!("✗ Batch size {batch_size} failed: {e:?}");
                 return Err(e.into());
             }
         }
@@ -283,8 +282,7 @@ async fn test_gas_limit_scenarios() -> Result<()> {
         let result = fixture.builder.build_payload(payload_attrs).await;
         assert!(
             result.is_ok(),
-            "Payload with gas limit {} should build successfully",
-            gas_limit
+            "Payload with gas limit {gas_limit} should build successfully"
         );
 
         let sealed_block = result.unwrap();

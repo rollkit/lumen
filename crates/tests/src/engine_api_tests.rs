@@ -23,7 +23,7 @@ impl EngineApiTestFixture {
         Ok(Self { base })
     }
 
-    /// Simulates InitChain from the Go Engine API test
+    /// Simulates `InitChain` from the Go Engine API test
     async fn init_chain(&self, _genesis_time: u64, initial_height: u64) -> Result<(Vec<u8>, u64)> {
         if initial_height != 1 {
             return Err(eyre::eyre!(
@@ -34,7 +34,7 @@ impl EngineApiTestFixture {
         Ok((self.base.genesis_state_root.to_vec(), TEST_GAS_LIMIT))
     }
 
-    /// Simulates ExecuteTxs from the Go Engine API test
+    /// Simulates `ExecuteTxs` from the Go Engine API test
     async fn execute_txs(
         &self,
         transactions: Vec<reth_ethereum_primitives::TransactionSigned>,
@@ -55,24 +55,23 @@ impl EngineApiTestFixture {
         Ok((sealed_block.state_root.to_vec(), sealed_block.gas_used))
     }
 
-    /// Simulates SetFinal from the Go Engine API test
+    /// Simulates `SetFinal` from the Go Engine API test
     async fn set_final(&self, block_height: u64) -> Result<()> {
-        println!("Setting block {} as final", block_height);
+        println!("Setting block {block_height} as final");
         Ok(())
     }
 
     /// Checks the latest block info - simulating the Go test's checkLatestBlock
     fn check_latest_block(&self, expected_height: u64, expected_tx_count: usize) -> Result<()> {
         println!(
-            "Checking latest block: height={}, expected_txs={}",
-            expected_height, expected_tx_count
+            "Checking latest block: height={expected_height}, expected_txs={expected_tx_count}"
         );
         Ok(())
     }
 }
 
 /// Tests the end-to-end Engine API execution flow - build chain phase
-/// This mirrors the Go test's TestEngineExecution build phase
+/// This mirrors the Go test's `TestEngineExecution` build phase
 #[tokio::test]
 async fn test_engine_execution_build_chain() -> Result<()> {
     let fixture = EngineApiTestFixture::new().await?;
@@ -88,8 +87,7 @@ async fn test_engine_execution_build_chain() -> Result<()> {
     // Initialize chain (similar to Go's InitChain)
     let (state_root, gas_limit) = fixture.init_chain(genesis_time, initial_height).await?;
     println!(
-        "Chain initialized with state_root: {:?}, gas_limit: {}",
-        state_root, gas_limit
+        "Chain initialized with state_root: {state_root:?}, gas_limit: {gas_limit}"
     );
 
     let mut prev_state_root = state_root;
@@ -105,8 +103,7 @@ async fn test_engine_execution_build_chain() -> Result<()> {
         };
 
         println!(
-            "Building block {} with {} transactions",
-            block_height, n_txs
+            "Building block {block_height} with {n_txs} transactions"
         );
 
         // Create transactions for this block
@@ -164,27 +161,22 @@ async fn test_engine_execution_build_chain() -> Result<()> {
         // Verify state root changes for non-empty blocks
         if n_txs == 0 {
             println!("  Empty block - state root handling verified");
+        } else if new_state_root == vec![0u8; 32] {
+            println!(
+                "  Block with {n_txs} transactions processed, state root is zero (mock environment)"
+            );
+        } else if prev_state_root != new_state_root {
+            println!(
+                "  Block with {n_txs} transactions processed, state root changed"
+            );
         } else {
-            if new_state_root == vec![0u8; 32] {
-                println!(
-                    "  Block with {} transactions processed, state root is zero (mock environment)",
-                    n_txs
-                );
-            } else if prev_state_root != new_state_root {
-                println!(
-                    "  Block with {} transactions processed, state root changed",
-                    n_txs
-                );
-            } else {
-                println!(
-                    "  Block with {} transactions processed, state root unchanged",
-                    n_txs
-                );
-            }
+            println!(
+                "  Block with {n_txs} transactions processed, state root unchanged"
+            );
         }
 
         prev_state_root = new_state_root;
-        println!("✓ Block {} completed successfully", block_height);
+        println!("✓ Block {block_height} completed successfully");
     }
 
     println!("✓ Engine API build chain test passed!");
@@ -192,7 +184,7 @@ async fn test_engine_execution_build_chain() -> Result<()> {
 }
 
 /// Tests the Engine API sync chain phase
-/// This mirrors the Go test's TestEngineExecution sync phase
+/// This mirrors the Go test's `TestEngineExecution` sync phase
 #[tokio::test]
 async fn test_engine_execution_sync_chain() -> Result<()> {
     println!("=== Engine API Sync Chain Phase ===");
@@ -211,8 +203,7 @@ async fn test_engine_execution_sync_chain() -> Result<()> {
         .init_chain(genesis_time, initial_height)
         .await?;
     println!(
-        "Sync chain initialized with state_root: {:?}, gas_limit: {}",
-        state_root, gas_limit
+        "Sync chain initialized with state_root: {state_root:?}, gas_limit: {gas_limit}"
     );
 
     let mut prev_state_root = state_root;
@@ -229,7 +220,7 @@ async fn test_engine_execution_sync_chain() -> Result<()> {
     for (block_height, (n_txs, expected_tx_count)) in test_payloads.into_iter().enumerate() {
         let block_height = (block_height + 1) as u64; // Convert to 1-based
 
-        println!("Syncing block {} with {} transactions", block_height, n_txs);
+        println!("Syncing block {block_height} with {n_txs} transactions");
 
         // Create the same transactions as in build phase
         let transactions = if n_txs > 0 {
@@ -271,23 +262,18 @@ async fn test_engine_execution_sync_chain() -> Result<()> {
         // Verify state root behavior
         if n_txs == 0 {
             println!("  Empty block sync - state root handling verified");
+        } else if new_state_root == vec![0u8; 32] {
+            println!(
+                "  Block with {n_txs} transactions synced, state root is zero (mock environment)"
+            );
+        } else if prev_state_root != new_state_root {
+            println!(
+                "  Block with {n_txs} transactions synced, state root changed"
+            );
         } else {
-            if new_state_root == vec![0u8; 32] {
-                println!(
-                    "  Block with {} transactions synced, state root is zero (mock environment)",
-                    n_txs
-                );
-            } else if prev_state_root != new_state_root {
-                println!(
-                    "  Block with {} transactions synced, state root changed",
-                    n_txs
-                );
-            } else {
-                println!(
-                    "  Block with {} transactions synced, state root unchanged",
-                    n_txs
-                );
-            }
+            println!(
+                "  Block with {n_txs} transactions synced, state root unchanged"
+            );
         }
 
         // Set block as final
@@ -297,7 +283,7 @@ async fn test_engine_execution_sync_chain() -> Result<()> {
         sync_fixture.check_latest_block(block_height, expected_tx_count)?;
 
         prev_state_root = new_state_root;
-        println!("✓ Block {} synced successfully", block_height);
+        println!("✓ Block {block_height} synced successfully");
     }
 
     println!("✓ Engine API sync chain test passed!");
@@ -333,7 +319,7 @@ async fn test_engine_api_error_handling() -> Result<()> {
 
         match result {
             Ok(_) => println!("✓ Large timestamp handled gracefully"),
-            Err(e) => println!("✓ Large timestamp rejected appropriately: {}", e),
+            Err(e) => println!("✓ Large timestamp rejected appropriately: {e}"),
         }
     }
 
@@ -352,10 +338,10 @@ async fn test_engine_api_error_handling() -> Result<()> {
 
         match result {
             Ok((_, gas_used)) => {
-                println!("✓ Large transaction batch handled: gas_used={}", gas_used);
+                println!("✓ Large transaction batch handled: gas_used={gas_used}");
             }
             Err(e) => {
-                println!("✓ Large transaction batch rejected appropriately: {}", e);
+                println!("✓ Large transaction batch rejected appropriately: {e}");
             }
         }
     }

@@ -9,17 +9,16 @@ use std::process::{Command, Stdio};
 #[test]
 fn test_lumen_binary_compiles() {
     let output = Command::new("cargo")
-        .args(&["build", "-p", "lumen", "--bin", "lumen"])
+        .args(["build", "-p", "lumen", "--bin", "lumen"])
         .output()
         .expect("Failed to execute cargo build");
 
-    if !output.status.success() {
-        panic!(
-            "Binary compilation failed:\nstdout: {}\nstderr: {}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+    assert!(
+        output.status.success(),
+        "Binary compilation failed:\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     println!("✓ lumen binary compilation test passed");
 }
@@ -28,7 +27,7 @@ fn test_lumen_binary_compiles() {
 #[test]
 fn test_lumen_help() {
     let output = Command::new("cargo")
-        .args(&["run", "-p", "lumen", "--bin", "lumen", "--", "--help"])
+        .args(["run", "-p", "lumen", "--bin", "lumen", "--", "--help"])
         .output()
         .expect("Failed to execute lumen --help");
 
@@ -43,7 +42,7 @@ fn test_lumen_help() {
     // Should contain rollkit-specific options or at least show it's a rollkit-enabled build
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    let full_output = format!("{} {}", stdout, stderr);
+    let full_output = format!("{stdout} {stderr}");
 
     // Check if rollkit is mentioned anywhere in the output (args, build info, etc)
     assert!(
@@ -62,7 +61,7 @@ fn test_lumen_help() {
 fn test_rollkit_cli_arguments() {
     // Test that rollkit-specific arguments are parsed correctly
     let output = Command::new("cargo")
-        .args(&["run", "-p", "lumen", "--bin", "lumen", "--", "--help"])
+        .args(["run", "-p", "lumen", "--bin", "lumen", "--", "--help"])
         .output()
         .expect("Failed to execute lumen help");
 
@@ -70,7 +69,7 @@ fn test_rollkit_cli_arguments() {
 
     // Check for rollkit-specific arguments or lumen branding
     let stderr = String::from_utf8_lossy(&output.stderr);
-    let full_output = format!("{} {}", stdout, stderr);
+    let full_output = format!("{stdout} {stderr}");
     assert!(
         full_output.to_lowercase().contains("rollkit")
             || full_output.contains("Rollkit")
@@ -92,7 +91,7 @@ fn test_rollkit_cli_arguments() {
 #[test]
 fn test_lumen_invalid_arguments() {
     let output = Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "-p",
             "lumen",
@@ -116,8 +115,7 @@ fn test_lumen_invalid_arguments() {
     // Should contain some indication of the error
     assert!(
         stderr.contains("error") || stderr.contains("unknown") || stderr.contains("unrecognized"),
-        "Error output should indicate invalid argument: {}",
-        stderr
+        "Error output should indicate invalid argument: {stderr}"
     );
 
     println!("✓ lumen invalid arguments test passed");
@@ -127,7 +125,7 @@ fn test_lumen_invalid_arguments() {
 #[test]
 fn test_rollkit_engine_api_tests_run() {
     let output = Command::new("cargo")
-        .args(&["test", "test_engine_api", "--lib"])
+        .args(["test", "test_engine_api", "--lib"])
         .output()
         .expect("Failed to execute cargo test for Engine API tests");
 
@@ -135,8 +133,7 @@ fn test_rollkit_engine_api_tests_run() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         if stderr.contains("dependency") || stderr.contains("feature") {
             println!(
-                "⚠ Engine API tests skipped (missing dependencies): {}",
-                stderr
+                "⚠ Engine API tests skipped (missing dependencies): {stderr}"
             );
             return;
         }
@@ -155,17 +152,16 @@ fn test_rollkit_engine_api_tests_run() {
 #[test]
 fn test_rollkit_library_compilation() {
     let output = Command::new("cargo")
-        .args(&["build", "--lib"])
+        .args(["build", "--lib"])
         .output()
         .expect("Failed to execute cargo build --lib");
 
-    if !output.status.success() {
-        panic!(
-            "Library compilation failed:\nstdout: {}\nstderr: {}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+    assert!(
+        output.status.success(),
+        "Library compilation failed:\nstdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     println!("✓ lumen library compilation test passed");
 }
@@ -174,7 +170,7 @@ fn test_rollkit_library_compilation() {
 #[test]
 fn test_rollkit_documentation_generation() {
     let output = Command::new("cargo")
-        .args(&["doc", "--no-deps", "--lib"])
+        .args(["doc", "--no-deps", "--lib"])
         .env("RUSTDOCFLAGS", "-D warnings") // Treat doc warnings as errors
         .output()
         .expect("Failed to execute cargo doc");
@@ -183,8 +179,7 @@ fn test_rollkit_documentation_generation() {
         // Documentation generation failure is not critical, just log it
         let stderr = String::from_utf8_lossy(&output.stderr);
         println!(
-            "⚠ Documentation generation failed (non-critical): {}",
-            stderr
+            "⚠ Documentation generation failed (non-critical): {stderr}"
         );
         return;
     }
@@ -197,7 +192,7 @@ fn test_rollkit_documentation_generation() {
 fn test_workspace_integration() {
     // Test that the rollkit crate is properly integrated into the workspace
     let output = Command::new("cargo")
-        .args(&["metadata", "--format-version", "1"])
+        .args(["metadata", "--format-version", "1"])
         .output()
         .expect("Failed to execute cargo metadata");
 
