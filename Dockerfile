@@ -3,7 +3,17 @@ WORKDIR /app
 
 LABEL org.opencontainers.image.licenses="MIT OR Apache-2.0"
 
-RUN apt-get update && apt-get -y upgrade && apt-get install -y libclang-dev pkg-config
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    apt-get install -y \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    clang-14 \
+    libclang-14-dev \
+    llvm-14-dev \
+    libc6-dev \
+    && ln -sf /usr/lib/llvm-14/lib/libclang.so /usr/lib/libclang.so
 
 FROM chef AS planner
 COPY . .
