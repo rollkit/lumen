@@ -1,0 +1,44 @@
+# Runs E2E tests.
+
+name: e2e
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - uses: taiki-e/install-action@nextest
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+      - name: Build Lumen
+        run: |
+          cargo build --profile release --locked --bin lumen
+
+      - name: Run E2E tests
+        run: |
+          cargo nextest run \
+            --locked \
+            --workspace \
+            -E "package(lumen-tests)" \
+            --no-capture
+        env:
+          RUST_LOG: debug

@@ -1,0 +1,33 @@
+[package]
+name = "lumen-rollkit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+description = "Rollkit-specific types and integration for Lumen"
+
+[dependencies]
+# Reth dependencies
+reth-payload-primitives.workspace = true
+reth-primitives.workspace = true
+reth-primitives-traits.workspace = true
+reth-engine-primitives.workspace = true
+
+# Alloy dependencies
+alloy-rpc-types-engine.workspace = true
+alloy-primitives.workspace = true
+alloy-eips.workspace = true
+alloy-consensus.workspace = true
+alloy-rlp.workspace = true
+
+# Core dependencies
+serde = { workspace = true, features = ["derive"] }
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true
