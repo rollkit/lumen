@@ -1,0 +1,19 @@
+FROM ghcr.io/cross-rs/cross:main
+
+# Install additional build tools and headers
+RUN apt-get update && \
+    apt-get install -y \
+        build-essential \
+        pkg-config \
+        libclang-dev \
+        clang && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up environment variables for x86_64 cross-compilation
+ENV CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc
+ENV CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++
+ENV AR_x86_64_unknown_linux_gnu=x86_64-linux-gnu-ar
+ENV STRIP_x86_64_unknown_linux_gnu=x86_64-linux-gnu-strip
+ENV BINDGEN_EXTRA_CLANG_ARGS_x86_64_unknown_linux_gnu="-I/usr/include -I/usr/include/x86_64-linux-gnu"
+ENV CFLAGS_x86_64_unknown_linux_gnu="-I/usr/include -I/usr/include/x86_64-linux-gnu"
+ENV CPPFLAGS_x86_64_unknown_linux_gnu="-I/usr/include -I/usr/include/x86_64-linux-gnu"
