@@ -132,9 +132,7 @@ fn test_rollkit_engine_api_tests_run() {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         if stderr.contains("dependency") || stderr.contains("feature") {
-            println!(
-                "⚠ Engine API tests skipped (missing dependencies): {stderr}"
-            );
+            println!("⚠ Engine API tests skipped (missing dependencies): {stderr}");
             return;
         }
 
@@ -178,9 +176,7 @@ fn test_rollkit_documentation_generation() {
     if !output.status.success() {
         // Documentation generation failure is not critical, just log it
         let stderr = String::from_utf8_lossy(&output.stderr);
-        println!(
-            "⚠ Documentation generation failed (non-critical): {stderr}"
-        );
+        println!("⚠ Documentation generation failed (non-critical): {stderr}");
         return;
     }
 

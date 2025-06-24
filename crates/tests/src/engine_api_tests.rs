@@ -86,9 +86,7 @@ async fn test_engine_execution_build_chain() -> Result<()> {
 
     // Initialize chain (similar to Go's InitChain)
     let (state_root, gas_limit) = fixture.init_chain(genesis_time, initial_height).await?;
-    println!(
-        "Chain initialized with state_root: {state_root:?}, gas_limit: {gas_limit}"
-    );
+    println!("Chain initialized with state_root: {state_root:?}, gas_limit: {gas_limit}");
 
     let mut prev_state_root = state_root;
     let mut current_parent_hash = fixture.base.genesis_hash;
@@ -102,9 +100,7 @@ async fn test_engine_execution_build_chain() -> Result<()> {
             (block_height as usize) % 5 + 1 // Variable transaction count (1-5 transactions)
         };
 
-        println!(
-            "Building block {block_height} with {n_txs} transactions"
-        );
+        println!("Building block {block_height} with {n_txs} transactions");
 
         // Create transactions for this block
         let transactions = if n_txs > 0 {
@@ -166,13 +162,9 @@ async fn test_engine_execution_build_chain() -> Result<()> {
                 "  Block with {n_txs} transactions processed, state root is zero (mock environment)"
             );
         } else if prev_state_root != new_state_root {
-            println!(
-                "  Block with {n_txs} transactions processed, state root changed"
-            );
+            println!("  Block with {n_txs} transactions processed, state root changed");
         } else {
-            println!(
-                "  Block with {n_txs} transactions processed, state root unchanged"
-            );
+            println!("  Block with {n_txs} transactions processed, state root unchanged");
         }
 
         prev_state_root = new_state_root;
@@ -202,9 +194,7 @@ async fn test_engine_execution_sync_chain() -> Result<()> {
     let (state_root, gas_limit) = sync_fixture
         .init_chain(genesis_time, initial_height)
         .await?;
-    println!(
-        "Sync chain initialized with state_root: {state_root:?}, gas_limit: {gas_limit}"
-    );
+    println!("Sync chain initialized with state_root: {state_root:?}, gas_limit: {gas_limit}");
 
     let mut prev_state_root = state_root;
 
@@ -267,13 +257,9 @@ async fn test_engine_execution_sync_chain() -> Result<()> {
                 "  Block with {n_txs} transactions synced, state root is zero (mock environment)"
             );
         } else if prev_state_root != new_state_root {
-            println!(
-                "  Block with {n_txs} transactions synced, state root changed"
-            );
+            println!("  Block with {n_txs} transactions synced, state root changed");
         } else {
-            println!(
-                "  Block with {n_txs} transactions synced, state root unchanged"
-            );
+            println!("  Block with {n_txs} transactions synced, state root unchanged");
         }
 
         // Set block as final

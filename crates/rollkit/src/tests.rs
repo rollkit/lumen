@@ -13,13 +13,13 @@ fn test_payload_attributes_creation() {
     let block_number = 1u64;
 
     let attrs = RollkitPayloadAttributes::new(
-    transactions.clone(),
-    gas_limit,
-    timestamp,
-    prev_randao,
-    suggested_fee_recipient,
-    parent_hash,
-    block_number,
+        transactions.clone(),
+        gas_limit,
+        timestamp,
+        prev_randao,
+        suggested_fee_recipient,
+        parent_hash,
+        block_number,
     );
 
     assert_eq!(attrs.transactions, transactions);

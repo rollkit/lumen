@@ -212,9 +212,7 @@ async fn test_basic_fork_choice_update(node: &EngineApiTestNode) -> Result<()> {
         }
         Err(e) => {
             // This is expected to fail with unknown hash in real node
-            println!(
-                "⚠ Fork choice update failed (expected for unknown hash): {e}"
-            );
+            println!("⚠ Fork choice update failed (expected for unknown hash): {e}");
         }
     }
 
