@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["bin/lumen", "crates/common", "crates/node", "crates/rollkit"]
+members = ["bin/lumen", "crates/common", "crates/node", "crates/rollkit", "crates/tests"]
 
 [workspace.package]
 version = "0.1.0"

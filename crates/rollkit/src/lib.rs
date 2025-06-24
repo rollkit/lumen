@@ -7,5 +7,8 @@
 /// Rollkit-specific types and related definitions.
 pub mod types;
 
+#[cfg(test)]
+mod tests;
+
 // Re-export public types
 pub use types::{PayloadAttributesError, RollkitPayloadAttributes};
