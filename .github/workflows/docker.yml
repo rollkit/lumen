@@ -5,6 +5,8 @@ name: docker
 on:
   workflow_dispatch: {}
   push:
+    branches:
+      - main
     tags:
       - v*
 
@@ -24,6 +26,18 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            libssl-dev \
+            libclang-dev \
+            clang \
+            llvm-dev \
+            gcc-multilib \
+            g++-multilib
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -37,4 +51,14 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt --install arm64,amd64
           docker buildx create --use --name cross-builder
       - name: Build and push image
-        run: make docker-build-push
+        run: |
+          export LIBCLANG_PATH=/usr/lib/llvm-18/lib
+          export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include"
+          export CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc
+          export CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++
+          export AR_x86_64_unknown_linux_gnu=x86_64-linux-gnu-ar
+          export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+          export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
+          export AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar
+          export PKG_CONFIG_ALLOW_CROSS=1
+          make docker-build-push
