@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Build stage
-FROM rust:1.81-slim AS builder
+FROM rust:1.86-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
