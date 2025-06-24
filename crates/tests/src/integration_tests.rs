@@ -44,14 +44,14 @@ fn test_lumen_help() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     let full_output = format!("{} {}", stdout, stderr);
-    
+
     // Check if rollkit is mentioned anywhere in the output (args, build info, etc)
     assert!(
-        full_output.to_lowercase().contains("rollkit") || 
-        full_output.contains("Rollkit") ||
-        full_output.contains("lumen"),  // Binary name indicates rollkit support
-        "Help output should indicate this is a rollkit-enabled build. Output: {}", 
-        &full_output[..500.min(full_output.len())]  // Show first 500 chars of output
+        full_output.to_lowercase().contains("rollkit")
+            || full_output.contains("Rollkit")
+            || full_output.contains("lumen"), // Binary name indicates rollkit support
+        "Help output should indicate this is a rollkit-enabled build. Output: {}",
+        &full_output[..500.min(full_output.len())] // Show first 500 chars of output
     );
 
     println!("✓ lumen help test passed");
@@ -72,9 +72,9 @@ fn test_rollkit_cli_arguments() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     let full_output = format!("{} {}", stdout, stderr);
     assert!(
-        full_output.to_lowercase().contains("rollkit") || 
-        full_output.contains("Rollkit") ||
-        full_output.contains("lumen"),  // Binary name indicates rollkit support
+        full_output.to_lowercase().contains("rollkit")
+            || full_output.contains("Rollkit")
+            || full_output.contains("lumen"), // Binary name indicates rollkit support
         "Should show rollkit-related content or lumen branding"
     );
 
