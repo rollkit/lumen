@@ -205,3 +205,12 @@ too_long_first_doc_paragraph = "allow"
 opt-level = 3
 lto = "thin"
 strip = "debuginfo"
+codegen-units = 1
+
+# Memory-optimized release profile
+[profile.docker]
+inherits = "release"
+opt-level = 2
+lto = false
+codegen-units = 1
+incremental = false

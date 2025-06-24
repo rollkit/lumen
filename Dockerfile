@@ -20,11 +20,14 @@ COPY crates/node/Cargo.toml crates/node/
 COPY crates/rollkit/Cargo.toml crates/rollkit/
 COPY crates/tests/Cargo.toml crates/tests/
 
-ARG BUILD_PROFILE=release
+ARG BUILD_PROFILE=docker
 ENV BUILD_PROFILE=$BUILD_PROFILE
 
-ARG RUSTFLAGS=""
+# Set memory-efficient build flags
+ARG RUSTFLAGS="-C codegen-units=1"
 ENV RUSTFLAGS="$RUSTFLAGS"
+ENV CARGO_BUILD_JOBS=2
+ENV CARGO_INCREMENTAL=0
 
 # Cook dependencies first (better layer caching)
 RUN cargo chef cook --profile $BUILD_PROFILE --recipe-path recipe.json --manifest-path bin/lumen/Cargo.toml
@@ -32,8 +35,8 @@ RUN cargo chef cook --profile $BUILD_PROFILE --recipe-path recipe.json --manifes
 # Copy all source code
 COPY . .
 
-# Build the binary
-RUN cargo build --profile $BUILD_PROFILE --bin lumen --manifest-path bin/lumen/Cargo.toml
+# Build the binary with memory-efficient settings
+RUN cargo build --profile $BUILD_PROFILE --bin lumen --manifest-path bin/lumen/Cargo.toml -j 2
 
 # Copy binary from correct location
 RUN ls -la /app/target/$BUILD_PROFILE/lumen
