@@ -21,7 +21,7 @@ use common::{create_test_transactions, TEST_TO_ADDRESS};
 
 /// Rollkit Engine API payload attributes
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RollkitEnginePayloadAttributes {
+pub(crate) struct RollkitEnginePayloadAttributes {
     /// Standard Ethereum payload attributes
     #[serde(flatten)]
     pub inner: alloy_rpc_types::engine::PayloadAttributes,
@@ -36,7 +36,7 @@ const DEFAULT_RPC_URL: &str = "http://127.0.0.1:8545";
 
 /// Test node manager for Engine API testing
 #[derive(Debug)]
-pub struct EngineApiTestNode {
+pub(crate) struct EngineApiTestNode {
     pub rpc_url: String,
     pub client: reqwest::Client,
     pub mock_mode: bool,
@@ -44,7 +44,7 @@ pub struct EngineApiTestNode {
 
 impl EngineApiTestNode {
     /// Creates a new test node and determines if it should use mock mode
-    pub async fn new() -> Result<Self> {
+    pub(crate) async fn new() -> Result<Self> {
         let client = reqwest::Client::new();
         let rpc_url = DEFAULT_RPC_URL.to_string();
 
@@ -88,7 +88,7 @@ impl EngineApiTestNode {
     }
 
     /// Makes an Engine API RPC call
-    pub async fn engine_rpc_call(
+    pub(crate) async fn engine_rpc_call(
         &self,
         method: &str,
         params: serde_json::Value,
@@ -165,7 +165,7 @@ impl EngineApiTestNode {
     }
 
     /// Calls `engine_forkchoiceUpdatedV3` with payload attributes
-    pub async fn fork_choice_updated_v3(
+    pub(crate) async fn fork_choice_updated_v3(
         &self,
         forkchoice_state: ForkchoiceState,
         payload_attributes: Option<RollkitEnginePayloadAttributes>,
@@ -181,7 +181,7 @@ impl EngineApiTestNode {
     }
 
     /// Gets a payload by ID
-    pub async fn get_payload_v3(&self, payload_id: PayloadId) -> Result<serde_json::Value> {
+    pub(crate) async fn get_payload_v3(&self, payload_id: PayloadId) -> Result<serde_json::Value> {
         let params = json!([payload_id]);
         self.engine_rpc_call("engine_getPayloadV3", params).await
     }
