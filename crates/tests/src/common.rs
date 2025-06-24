@@ -59,16 +59,16 @@ impl RollkitTestFixture {
         let genesis_state_root = B256::from_slice(&hex::decode(&GENESIS_STATEROOT[2..]).unwrap());
 
         // Setup genesis header with all required fields for modern Ethereum
-        let mut genesis_header = Header::default();
-        genesis_header.state_root = genesis_state_root;
-        genesis_header.number = 0;
-        genesis_header.gas_limit = TEST_GAS_LIMIT;
-        genesis_header.timestamp = TEST_TIMESTAMP;
-        // EIP-4844 fields required for Cancun and later hardforks
-        genesis_header.excess_blob_gas = Some(0);
-        genesis_header.blob_gas_used = Some(0);
-        // EIP-4788 field required for Cancun and later hardforks
-        genesis_header.parent_beacon_block_root = Some(B256::ZERO);
+        let genesis_header = Header {
+            state_root: genesis_state_root,
+            number: 0,
+            gas_limit: TEST_GAS_LIMIT,
+            timestamp: TEST_TIMESTAMP,
+            excess_blob_gas: Some(0),
+            blob_gas_used: Some(0),
+            parent_beacon_block_root: Some(B256::ZERO),
+            ..Default::default()
+        };
 
         provider.add_header(genesis_hash, genesis_header);
 
@@ -121,14 +121,16 @@ impl RollkitTestFixture {
 
     /// Adds a mock header to the provider for proper parent lookups
     pub fn add_mock_header(&self, hash: B256, number: u64, state_root: B256, timestamp: u64) {
-        let mut header = Header::default();
-        header.number = number;
-        header.state_root = state_root;
-        header.gas_limit = TEST_GAS_LIMIT;
-        header.timestamp = timestamp;
-        header.excess_blob_gas = Some(0);
-        header.blob_gas_used = Some(0);
-        header.parent_beacon_block_root = Some(B256::ZERO);
+        let header = Header {
+            number,
+            state_root,
+            gas_limit: TEST_GAS_LIMIT,
+            timestamp,
+            excess_blob_gas: Some(0),
+            blob_gas_used: Some(0),
+            parent_beacon_block_root: Some(B256::ZERO),
+            ..Default::default()
+        };
 
         self.provider.add_header(hash, header);
     }

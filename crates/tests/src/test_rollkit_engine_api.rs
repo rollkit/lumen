@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::str::FromStr;
 
-use common::{create_test_transactions, TEST_CHAIN_ID, TEST_TO_ADDRESS};
+use common::{create_test_transactions, TEST_TO_ADDRESS};
 
 /// Rollkit Engine API payload attributes
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
