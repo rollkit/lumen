@@ -5,8 +5,7 @@
 
 use std::sync::Arc;
 
-use alloy_consensus::transaction::SignerRecoverable;
-use alloy_consensus::{TxLegacy, TypedTransaction};
+use alloy_consensus::{transaction::SignerRecoverable, TxLegacy, TypedTransaction};
 use alloy_primitives::{Address, Bytes, ChainId, Signature, TxKind, B256, U256};
 use eyre::Result;
 use reth_chainspec::{ChainSpecBuilder, MAINNET};
