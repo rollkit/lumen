@@ -1,32 +1,60 @@
-# syntax=docker/dockerfile:1
-
-# Build stage
-FROM rust:1.86-slim AS builder
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
+FROM lukemathwalker/cargo-chef:latest-rust-1 AS chef
 WORKDIR /app
 
-# Copy manifests
+LABEL org.opencontainers.image.licenses="MIT OR Apache-2.0"
+
+RUN apt-get update && apt-get -y upgrade && apt-get install -y libclang-dev pkg-config
+
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS builder
+COPY --from=planner /app/recipe.json recipe.json
+
+# Copy workspace Cargo files for better caching
 COPY Cargo.toml Cargo.lock ./
-COPY bin/ bin/
-COPY crates/ crates/
+COPY bin/lumen/Cargo.toml bin/lumen/
+COPY crates/common/Cargo.toml crates/common/
+COPY crates/node/Cargo.toml crates/node/
+COPY crates/rollkit/Cargo.toml crates/rollkit/
+COPY crates/tests/Cargo.toml crates/tests/
 
-# Build the application
-RUN cargo build --release --bin lumen
+ARG BUILD_PROFILE=release
+ENV BUILD_PROFILE=$BUILD_PROFILE
 
-# Runtime stage
-FROM gcr.io/distroless/cc-debian12
+ARG RUSTFLAGS=""
+ENV RUSTFLAGS="$RUSTFLAGS"
 
-# Copy the binary from builder
-COPY --from=builder /app/target/release/lumen /usr/local/bin/lumen
+# Cook dependencies first (better layer caching)
+RUN cargo chef cook --profile $BUILD_PROFILE --recipe-path recipe.json --manifest-path bin/lumen/Cargo.toml
 
-# Expose default ports
-EXPOSE 8545 8546 30303 6060 9001
+# Copy all source code
+COPY . .
 
-# Set the entrypoint
+# Build the binary
+RUN cargo build --profile $BUILD_PROFILE --bin lumen --manifest-path bin/lumen/Cargo.toml
+
+# Copy binary from correct location
+RUN ls -la /app/target/$BUILD_PROFILE/lumen
+RUN cp /app/target/$BUILD_PROFILE/lumen /lumen
+
+FROM ubuntu:22.04 AS runtime
+
+RUN apt-get update && \
+    apt-get install -y ca-certificates libssl-dev pkg-config strace && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=builder /lumen /usr/local/bin/
+RUN chmod +x /usr/local/bin/lumen
+COPY LICENSE-* ./
+
+# Expose ports: P2P, Discovery, Metrics, JSON-RPC, WebSocket, GraphQL, Engine API
+EXPOSE 30303 30303/udp 9001 8545 8546 7545 8551
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD /usr/local/bin/lumen --version || exit 1
+
 ENTRYPOINT ["/usr/local/bin/lumen"]
