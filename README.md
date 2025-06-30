@@ -104,7 +104,7 @@ Lumen follows a modular architecture similar to Odyssey, with clear separation o
 - **`crates/common`**: Shared utilities and constants used across all crates
 - **`crates/node`**: Core node implementation including the payload builder
 - **`crates/rollkit`**: Rollkit-specific types and integration logic
-- **`crates/e2e-tests`**: Comprehensive end-to-end tests
+- **`crates/tests`**: Comprehensive test suite including unit and integration tests
 
 This modular design allows for:
 - Better code organization and maintainability
@@ -182,7 +182,7 @@ lumen/
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       └── types.rs       # Rollkit payload attributes
-│   └── e2e-tests/              # End-to-end tests
+│   └── tests/                  # Comprehensive test suite
 │       ├── Cargo.toml
 │       └── src/
 │           ├── lib.rs
