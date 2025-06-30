@@ -1,0 +1,55 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+*.pdb
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+!LICENSE-*
+
+# Development files
+.env
+.env.local
+.env.*.local
+
+# Test artifacts
+tarpaulin-report.html
+cobertura.xml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Benchmarks and profiling
+benches/
+perf.data
+perf.data.old
+flamegraph.svg
