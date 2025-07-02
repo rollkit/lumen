@@ -70,6 +70,33 @@ pub struct RollkitArgs {
         help = "Enable Rollkit integration for transaction processing via Engine API"
     )]
     pub enable_rollkit: bool,
+
+    /// Optional sequencer HTTP endpoint (e.g. http://localhost:8547).
+    /// If unset, Lumen behaves as today (transactions land in local pool).
+    #[arg(
+        long = "sequencer-http",
+        value_name = "URI",
+        help = "Forward raw transactions to the given sequencer JSON-RPC endpoint"
+    )]
+    pub sequencer_http: Option<String>,
+
+    /// Optional Basic-Auth header (e.g. \"Basic dXNlcjpwYXNz\").
+    /// Can also be supplied via the `SEQUENCER_AUTH` env var.
+    #[arg(
+        long = "sequencer-auth",
+        env = "SEQUENCER_AUTH",
+        value_name = "BASIC_AUTH",
+        help = "Basic-Auth string to attach when forwarding to the sequencer"
+    )]
+    pub sequencer_auth: Option<String>,
+
+    /// Disable local tx-pool gossip while forwarding to a sequencer (OP-Stack parity)
+    #[arg(
+        long = "disable-tx-pool-gossip",
+        default_value_t = false,
+        help = "Disable mempool gossip when --sequencer-http is set"
+    )]
+    pub disable_tx_pool_gossip: bool,
 }
 
 /// Rollkit payload attributes that support passing transactions via Engine API
@@ -371,7 +398,8 @@ impl NodeTypes for RollkitNode {
 }
 
 /// Rollkit node addons configuring RPC types with custom engine validator
-pub type RollkitNodeAddOns<N> = RpcAddOns<N, EthereumEthApiBuilder, RollkitEngineValidatorBuilder>;
+pub type RollkitNodeAddOns<N> =
+    RpcAddOns<N, lumen_node::ForwardingEthApiBuilder, RollkitEngineValidatorBuilder>;
 
 impl<N> Node<N> for RollkitNode
 where
@@ -627,7 +655,10 @@ fn main() {
             info!("=== ROLLKIT-RETH: Using custom payload builder with transaction support ===");
 
             let handle = builder
-                .node(RollkitNode::new(rollkit_args))
+                .node(RollkitNode::new(rollkit_args.clone()))
+                .with_eth_api_builder(lumen_node::ForwardingEthApiBuilder::new(
+                    rollkit_args.clone(),
+                ))
                 .launch()
                 .await?;
 
