@@ -40,7 +40,7 @@ pub struct TxForwarder {
 impl TxForwarder {
     /// Construct a new forwarder.
     ///
-    /// * `endpoint`  – The sequencer endpoint (e.g. http://localhost:8547).
+    /// * `endpoint`  – The sequencer endpoint (e.g. <http://localhost:8547>).
     /// * `queue_size` – Maximum number of in-flight requests (mapped onto a semaphore).
     /// * `rate_limit_per_sec` – Maximum POST requests per second sent to the sequencer.
     pub fn new(
@@ -58,7 +58,7 @@ impl TxForwarder {
 
         let quota = Quota::per_second(core::num::NonZeroU32::new(rate_limit_per_sec).unwrap());
         Self {
-            client: client.unwrap_or_else(reqwest::Client::new),
+            client: client.unwrap_or_default(),
             endpoint,
             limiter: Arc::new(RateLimiter::direct(quota)),
             queue: Arc::new(Semaphore::new(queue_size)),

@@ -30,5 +30,6 @@ pub struct ForwardingConfig {
     pub sequencer_http: Option<String>,
     /// Optional Basic-Auth header
     pub sequencer_auth: Option<String>,
+    /// Disable transaction pool gossip
     pub disable_tx_pool_gossip: bool,
 }

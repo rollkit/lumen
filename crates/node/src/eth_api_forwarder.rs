@@ -33,8 +33,7 @@ use alloy_rpc_types::{
 use alloy_serde::JsonStorageKey;
 
 use reth_rpc_api::servers::eth::EthApiServer;
-use reth_rpc_eth_api::{EthApiTypes, RpcNodeCore};
-use reth_rpc_eth_api::helpers::AddDevSigners;
+use reth_rpc_eth_api::{helpers::AddDevSigners, EthApiTypes, RpcNodeCore};
 
 /// Thin wrapper that adds selective forwarding on top of an existing
 /// `EthApiServer` implementation.
@@ -47,6 +46,7 @@ pub struct EthApiForwarder<I> {
 }
 
 impl<I> EthApiForwarder<I> {
+    /// Create a new `EthApiForwarder` instance.
     pub fn new(inner: I, remote: HttpClient) -> Self {
         Self {
             inner,
@@ -63,7 +63,7 @@ where
     type Error = I::Error;
     type NetworkTypes = I::NetworkTypes;
     type RpcConvert = I::RpcConvert;
-    
+
     fn tx_resp_builder(&self) -> &Self::RpcConvert {
         self.inner.tx_resp_builder()
     }
@@ -80,23 +80,23 @@ where
     type Evm = I::Evm;
     type Network = I::Network;
     type PayloadBuilder = I::PayloadBuilder;
-    
+
     fn provider(&self) -> &Self::Provider {
         self.inner.provider()
     }
-    
+
     fn pool(&self) -> &Self::Pool {
         self.inner.pool()
     }
-    
+
     fn evm_config(&self) -> &Self::Evm {
         self.inner.evm_config()
     }
-    
+
     fn network(&self) -> &Self::Network {
         self.inner.network()
     }
-    
+
     fn payload_builder(&self) -> &Self::PayloadBuilder {
         self.inner.payload_builder()
     }
@@ -141,7 +141,7 @@ where
             .map_err(|e| {
                 jsonrpsee::types::error::ErrorObject::owned(
                     jsonrpsee::types::error::INTERNAL_ERROR_CODE,
-                    format!("Failed to forward transaction: {}", e),
+                    format!("Failed to forward transaction: {e}"),
                     None::<String>,
                 )
             })
@@ -156,7 +156,7 @@ where
             .map_err(|e| {
                 jsonrpsee::types::error::ErrorObject::owned(
                     jsonrpsee::types::error::INTERNAL_ERROR_CODE,
-                    format!("Failed to forward transaction sync: {}", e),
+                    format!("Failed to forward transaction sync: {e}"),
                     None::<String>,
                 )
             })

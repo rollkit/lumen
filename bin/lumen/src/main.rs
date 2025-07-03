@@ -71,7 +71,7 @@ pub struct RollkitArgs {
     )]
     pub enable_rollkit: bool,
 
-    /// Optional sequencer HTTP endpoint (e.g. http://localhost:8547).
+    /// Optional sequencer HTTP endpoint (e.g. <http://localhost:8547>).
     /// If unset, Lumen behaves as today (transactions land in local pool).
     #[arg(
         long = "sequencer-http",
@@ -398,8 +398,7 @@ impl NodeTypes for RollkitNode {
 }
 
 /// Rollkit node addons configuring RPC types with custom engine validator
-pub type RollkitNodeAddOns<N> =
-    RpcAddOns<N, EthereumEthApiBuilder, RollkitEngineValidatorBuilder>;
+pub type RollkitNodeAddOns<N> = RpcAddOns<N, EthereumEthApiBuilder, RollkitEngineValidatorBuilder>;
 
 impl<N> Node<N> for RollkitNode
 where
