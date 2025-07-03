@@ -56,7 +56,7 @@ impl TxForwarder {
             init_metrics();
         });
 
-        let quota = Quota::per_second(core::num::NonZeroU32::new(rate_limit_per_sec).unwrap());
+        let quota = Quota::per_second(core::num::NonZeroU32::new(rate_limit_per_sec).expect("rate_limit_per_sec must be non-zero"));
         Self {
             client: client.unwrap_or_default(),
             endpoint,
