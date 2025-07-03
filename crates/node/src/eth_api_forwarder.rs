@@ -1,11 +1,3 @@
-// src/eth_api_forwarder.rs — explicit pass‑through wrapper
-// -----------------------------------------------------------------------------
-// A *no‑macro* implementation of `EthApiServer` that forwards every method to
-// an inner implementation, except for the handful you override manually
-// (here: `send_raw_transaction` and `send_raw_transaction_sync`).
-// Works with **reth‑rpc‑api v1.5.x** + Alloy 0.7.
-// -----------------------------------------------------------------------------
-
 #![allow(
     clippy::needless_lifetimes,
     clippy::type_complexity,
@@ -139,7 +131,7 @@ where
             .request("eth_sendRawTransaction", vec![raw_tx])
             .await
             .map_err(|e| match e {
-                jsonrpsee::core::client::ClientError::Call(obj) => obj,
+                jsonrpsee::core::ClientError::Call(obj) => obj,
                 _ => jsonrpsee::types::error::ErrorObject::owned(
                     jsonrpsee::types::error::INTERNAL_ERROR_CODE,
                     format!("Failed to forward transaction: {e}"),
@@ -155,7 +147,7 @@ where
             .request("eth_sendRawTransactionSync", vec![raw_tx])
             .await
             .map_err(|e| match e {
-                jsonrpsee::core::client::ClientError::Call(obj) => obj,
+                jsonrpsee::core::ClientError::Call(obj) => obj,
                 _ => jsonrpsee::types::error::ErrorObject::owned(
                     jsonrpsee::types::error::INTERNAL_ERROR_CODE,
                     format!("Failed to forward transaction sync: {e}"),
