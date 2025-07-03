@@ -56,7 +56,10 @@ impl TxForwarder {
             init_metrics();
         });
 
-        let quota = Quota::per_second(core::num::NonZeroU32::new(rate_limit_per_sec).expect("rate_limit_per_sec must be non-zero"));
+        let quota = Quota::per_second(
+            core::num::NonZeroU32::new(rate_limit_per_sec)
+                .expect("rate_limit_per_sec must be non-zero"),
+        );
         Self {
             client: client.unwrap_or_default(),
             endpoint,
@@ -118,8 +121,9 @@ impl TxForwarder {
         let json: serde_json::Value = resp.json().await.map_err(ForwardError::InvalidJson)?;
         if let Some(result) = json.get("result").and_then(|v| v.as_str()) {
             let hash = result.trim_start_matches("0x");
-            let bytes = hex::decode(hash).map_err(|_| ForwardError::InvalidHash)?;
-            return Ok(B256::from_slice(&bytes));
+            let mut b256_bytes = [0u8; 32];
+            hex::decode_to_slice(hash, &mut b256_bytes).map_err(|_| ForwardError::InvalidHash)?;
+            return Ok(B256::from(b256_bytes));
         }
 
         if json.get("error").is_some() {
