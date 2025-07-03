@@ -138,12 +138,13 @@ where
         self.remote
             .request("eth_sendRawTransaction", vec![raw_tx])
             .await
-            .map_err(|e| {
-                jsonrpsee::types::error::ErrorObject::owned(
+            .map_err(|e| match e {
+                jsonrpsee::core::client::ClientError::Call(obj) => obj,
+                _ => jsonrpsee::types::error::ErrorObject::owned(
                     jsonrpsee::types::error::INTERNAL_ERROR_CODE,
                     format!("Failed to forward transaction: {e}"),
                     None::<String>,
-                )
+                ),
             })
     }
 
@@ -153,12 +154,13 @@ where
         self.remote
             .request("eth_sendRawTransactionSync", vec![raw_tx])
             .await
-            .map_err(|e| {
-                jsonrpsee::types::error::ErrorObject::owned(
+            .map_err(|e| match e {
+                jsonrpsee::core::client::ClientError::Call(obj) => obj,
+                _ => jsonrpsee::types::error::ErrorObject::owned(
                     jsonrpsee::types::error::INTERNAL_ERROR_CODE,
                     format!("Failed to forward transaction sync: {e}"),
                     None::<String>,
-                )
+                ),
             })
     }
 
