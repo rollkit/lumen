@@ -51,11 +51,14 @@ reth-transaction-pool.workspace = true
 
 # Alloy dependencies
 alloy-consensus.workspace = true
+alloy-dyn-abi.workspace = true
 alloy-eips.workspace = true
+alloy-json-rpc.workspace = true
 alloy-primitives.workspace = true
 alloy-rlp.workspace = true
 alloy-rpc-types-engine.workspace = true
 alloy-rpc-types.workspace = true
+alloy-serde.workspace = true
 
 # Core dependencies
 async-trait.workspace = true

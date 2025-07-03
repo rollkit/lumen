@@ -12,7 +12,6 @@ use serde_json::json;
 use thiserror::Error;
 use tokio::sync::Semaphore;
 
-use metrics::{counter, describe_counter, describe_histogram, histogram};
 use tracing::debug;
 
 /// Initialize metrics
@@ -106,7 +105,7 @@ impl TxForwarder {
         let resp = req.send().await.map_err(ForwardError::Network)?;
 
         let latency_ms = start.elapsed().as_millis() as f64;
-        metrics::histogram!("tx_forwarder_latency_ms", latency_ms);
+        metrics::histogram!("tx_forwarder_latency_ms").record(latency_ms);
 
         // Step 4 – map HTTP status
         if !resp.status().is_success() {

@@ -20,8 +20,8 @@ pub use forwarder::{ForwardError, TxForwarder};
 pub use builder::{create_payload_builder_service, RollkitPayloadBuilder};
 pub use config::{ConfigError, RollkitPayloadBuilderConfig};
 
-// Re-export the RPC builder so the binary crate can swap it in.
-pub use eth_api_forwarder::ForwardingEthApiBuilder;
+// Re-export the forwarder type
+pub use eth_api_forwarder::EthApiForwarder;
 
 /// Configuration for transaction forwarding to sequencer
 #[derive(Debug, Clone, Default)]

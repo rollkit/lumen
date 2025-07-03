@@ -399,7 +399,7 @@ impl NodeTypes for RollkitNode {
 
 /// Rollkit node addons configuring RPC types with custom engine validator
 pub type RollkitNodeAddOns<N> =
-    RpcAddOns<N, lumen_node::ForwardingEthApiBuilder, RollkitEngineValidatorBuilder>;
+    RpcAddOns<N, EthereumEthApiBuilder, RollkitEngineValidatorBuilder>;
 
 impl<N> Node<N> for RollkitNode
 where
@@ -656,9 +656,6 @@ fn main() {
 
             let handle = builder
                 .node(RollkitNode::new(rollkit_args.clone()))
-                .with_eth_api_builder(lumen_node::ForwardingEthApiBuilder::new(
-                    rollkit_args.clone(),
-                ))
                 .launch()
                 .await?;
 
