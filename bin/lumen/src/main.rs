@@ -687,6 +687,9 @@ where
     }
 }
 
+#[cfg(test)]
+mod network_test;
+
 fn main() {
     info!("=== ROLLKIT-RETH NODE STARTING ===");
 
