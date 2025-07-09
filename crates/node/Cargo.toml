@@ -65,7 +65,7 @@ async-trait.workspace = true
 delegate = "0.13.3"
 eyre.workspace = true
 futures.workspace = true
-jsonrpsee = {version = "0.25", features = ["server", "macros"]}
+jsonrpsee = {version = "0.25", features = ["server", "macros", "http-client"]}
 parking_lot = "0.12"
 serde = {workspace = true, features = ["derive"]}
 serde_json.workspace = true

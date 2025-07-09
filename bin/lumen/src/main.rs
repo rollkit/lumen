@@ -383,12 +383,20 @@ where
 pub struct RollkitNode {
     /// Rollkit-specific arguments
     pub args: RollkitArgs,
+    /// Transaction forwarding configuration
+    pub forwarding: lumen_node::ForwardingConfig,
 }
 
 impl RollkitNode {
     /// Create a new rollkit node with the given arguments
-    pub const fn new(args: RollkitArgs) -> Self {
-        Self { args }
+    pub fn new(args: RollkitArgs) -> Self {
+        let forwarding = lumen_node::ForwardingConfig {
+            sequencer_http: args.sequencer_http.clone(),
+            sequencer_auth: args.sequencer_auth.clone(),
+            disable_tx_pool_gossip: args.disable_tx_pool_gossip,
+            ..Default::default()
+        };
+        Self { args, forwarding }
     }
 }
 
@@ -399,9 +407,6 @@ impl NodeTypes for RollkitNode {
     type Storage = reth_ethereum::provider::EthStorage;
     type Payload = RollkitEngineTypes;
 }
-
-/// Rollkit node addons configuring RPC types with custom engine validator
-pub type RollkitNodeAddOns<N> = RpcAddOns<N, EthereumEthApiBuilder, RollkitEngineValidatorBuilder>;
 
 /// Rollkit network builder that optionally disables transaction pool gossip
 #[derive(Debug, Clone, Default)]
@@ -452,6 +457,8 @@ where
         Ok(handle)
     }
 }
+
+pub type RollkitNodeAddOns<N> = RpcAddOns<N, EthereumEthApiBuilder, RollkitEngineValidatorBuilder>;
 
 impl<N> Node<N> for RollkitNode
 where
