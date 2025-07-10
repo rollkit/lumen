@@ -67,13 +67,15 @@ impl PayloadBuilderAttributes for RollkitEnginePayloadBuilderAttributes {
 
         // Decode transactions from bytes if provided
         let mut transactions = Vec::new();
-        if let Some(tx_bytes_vec) = attributes.transactions {
-            for tx_bytes in tx_bytes_vec {
-                // Decode the transaction from RLP bytes (as sent by Go client)
-                let tx = TransactionSigned::network_decode(&mut tx_bytes.as_ref())
-                    .map_err(|e| RollkitEngineError::InvalidTransactionData(e.to_string()))?;
-                transactions.push(tx);
-            }
+        let transactions = attributes
+            .transactions
+            .unwrap_or_default()
+            .into_iter()
+            .map(|tx_bytes| {
+                TransactionSigned::network_decode(&mut tx_bytes.as_ref())
+                    .map_err(|e| RollkitEngineError::InvalidTransactionData(e.to_string()))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         }
 
         Ok(Self {
