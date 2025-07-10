@@ -55,7 +55,7 @@ RUN cp /app/target/$BUILD_PROFILE/lumen /lumen
 FROM ubuntu:22.04 AS runtime
 
 RUN apt-get update && \
-    apt-get install -y ca-certificates libssl-dev pkg-config strace && \
+    apt-get install -y ca-certificates curl libssl-dev pkg-config strace && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
