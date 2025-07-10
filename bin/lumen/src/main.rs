@@ -32,14 +32,14 @@ use reth_ethereum::{
             NodeTypes, PayloadAttributes, PayloadBuilderAttributes, PayloadTypes, PayloadValidator,
         },
         builder::{
-            components::{BasicPayloadServiceBuilder, ComponentsBuilder, PayloadBuilderBuilder},
+            components::{
+                BasicPayloadServiceBuilder, ComponentsBuilder, NetworkBuilder,
+                PayloadBuilderBuilder,
+            },
             rpc::{EngineValidatorBuilder, RpcAddOns},
             BuilderContext, Node, NodeAdapter, NodeComponentsBuilder,
         },
-        node::{
-            EthereumConsensusBuilder, EthereumExecutorBuilder, EthereumNetworkBuilder,
-            EthereumPoolBuilder,
-        },
+        node::{EthereumConsensusBuilder, EthereumExecutorBuilder, EthereumPoolBuilder},
         EthEvmConfig, EthereumEthApiBuilder,
     },
     pool::{PoolTransaction, TransactionPool},
@@ -48,9 +48,12 @@ use reth_ethereum::{
 };
 use reth_ethereum_cli::{chainspec::EthereumChainSpecParser, Cli};
 use reth_ethereum_payload_builder::EthereumExecutionPayloadValidator;
+use reth_network::{types::BasicNetworkPrimitives, NetworkHandle, PeersInfo};
+use reth_node_api::{PrimitivesTy, TxTy};
 use reth_payload_builder::{EthBuiltPayload, EthPayloadBuilderAttributes, PayloadBuilderError};
 use reth_provider::HeaderProvider;
 use reth_revm::cached::CachedReads;
+use reth_transaction_pool::PoolPooledTx;
 use reth_trie_db::MerklePatriciaTrie;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -70,6 +73,33 @@ pub struct RollkitArgs {
         help = "Enable Rollkit integration for transaction processing via Engine API"
     )]
     pub enable_rollkit: bool,
+
+    /// Optional sequencer HTTP endpoint (e.g. <http://localhost:8547>).
+    /// If unset, Lumen behaves as today (transactions land in local pool).
+    #[arg(
+        long = "sequencer-http",
+        value_name = "URI",
+        help = "Forward raw transactions to the given sequencer JSON-RPC endpoint"
+    )]
+    pub sequencer_http: Option<String>,
+
+    /// Optional Basic-Auth header (e.g. \"Basic dXNlcjpwYXNz\").
+    /// Can also be supplied via the `SEQUENCER_AUTH` env var.
+    #[arg(
+        long = "sequencer-auth",
+        env = "SEQUENCER_AUTH",
+        value_name = "BASIC_AUTH",
+        help = "Basic-Auth string to attach when forwarding to the sequencer"
+    )]
+    pub sequencer_auth: Option<String>,
+
+    /// Disable local tx-pool gossip while forwarding to a sequencer (OP-Stack parity)
+    #[arg(
+        long = "disable-tx-pool-gossip",
+        default_value_t = false,
+        help = "Disable mempool gossip when --sequencer-http is set"
+    )]
+    pub disable_tx_pool_gossip: bool,
 }
 
 /// Rollkit payload attributes that support passing transactions via Engine API
@@ -353,12 +383,20 @@ where
 pub struct RollkitNode {
     /// Rollkit-specific arguments
     pub args: RollkitArgs,
+    /// Transaction forwarding configuration
+    pub forwarding: lumen_node::ForwardingConfig,
 }
 
 impl RollkitNode {
     /// Create a new rollkit node with the given arguments
-    pub const fn new(args: RollkitArgs) -> Self {
-        Self { args }
+    pub fn new(args: RollkitArgs) -> Self {
+        let forwarding = lumen_node::ForwardingConfig {
+            sequencer_http: args.sequencer_http.clone(),
+            sequencer_auth: args.sequencer_auth.clone(),
+            disable_tx_pool_gossip: args.disable_tx_pool_gossip,
+            ..Default::default()
+        };
+        Self { args, forwarding }
     }
 }
 
@@ -370,7 +408,56 @@ impl NodeTypes for RollkitNode {
     type Payload = RollkitEngineTypes;
 }
 
-/// Rollkit node addons configuring RPC types with custom engine validator
+/// Rollkit network builder that optionally disables transaction pool gossip
+#[derive(Debug, Clone, Default)]
+pub struct RollkitNetworkBuilder {
+    /// Whether to disable transaction pool gossip
+    disable_tx_pool_gossip: bool,
+}
+
+impl RollkitNetworkBuilder {
+    /// Create a new network builder with the given gossip configuration
+    pub const fn new(disable_tx_pool_gossip: bool) -> Self {
+        Self {
+            disable_tx_pool_gossip,
+        }
+    }
+}
+
+impl<Node, Pool> NetworkBuilder<Node, Pool> for RollkitNetworkBuilder
+where
+    Node: FullNodeTypes<Types: NodeTypes<ChainSpec = ChainSpec>>,
+    Pool: TransactionPool<Transaction: PoolTransaction<Consensus = TxTy<Node::Types>>>
+        + Unpin
+        + 'static,
+{
+    type Network =
+        NetworkHandle<BasicNetworkPrimitives<PrimitivesTy<Node::Types>, PoolPooledTx<Pool>>>;
+
+    async fn build_network(
+        self,
+        ctx: &BuilderContext<Node>,
+        pool: Pool,
+    ) -> eyre::Result<Self::Network> {
+        // Configure the network with optional tx gossip disabled
+        let network_config = ctx
+            .network_config_builder()?
+            .disable_tx_gossip(self.disable_tx_pool_gossip)
+            .build(ctx.provider().clone());
+
+        if self.disable_tx_pool_gossip {
+            info!("Rollkit: Transaction pool gossip disabled");
+        }
+
+        // Build the network
+        let network = reth_network::NetworkManager::builder(network_config).await?;
+        let handle = ctx.start_network(network, pool);
+
+        info!(target: "reth::cli", enode=%handle.local_node_record(), "P2P networking initialized");
+        Ok(handle)
+    }
+}
+
 pub type RollkitNodeAddOns<N> = RpcAddOns<N, EthereumEthApiBuilder, RollkitEngineValidatorBuilder>;
 
 impl<N> Node<N> for RollkitNode
@@ -388,7 +475,7 @@ where
         N,
         EthereumPoolBuilder,
         BasicPayloadServiceBuilder<RollkitPayloadBuilderBuilder>,
-        EthereumNetworkBuilder,
+        RollkitNetworkBuilder,
         EthereumExecutorBuilder,
         EthereumConsensusBuilder,
     >;
@@ -404,7 +491,7 @@ where
             .payload(BasicPayloadServiceBuilder::new(
                 RollkitPayloadBuilderBuilder::new(&self.args),
             ))
-            .network(EthereumNetworkBuilder::default())
+            .network(RollkitNetworkBuilder::new(self.args.disable_tx_pool_gossip))
             .consensus(EthereumConsensusBuilder::default())
     }
 
@@ -607,6 +694,9 @@ where
     }
 }
 
+#[cfg(test)]
+mod network_test;
+
 fn main() {
     info!("=== ROLLKIT-RETH NODE STARTING ===");
 
@@ -627,7 +717,7 @@ fn main() {
             info!("=== ROLLKIT-RETH: Using custom payload builder with transaction support ===");
 
             let handle = builder
-                .node(RollkitNode::new(rollkit_args))
+                .node(RollkitNode::new(rollkit_args.clone()))
                 .launch()
                 .await?;
 
