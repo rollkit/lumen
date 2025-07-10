@@ -1,0 +1,232 @@
+use alloy_primitives::U256;
+use clap::Parser;
+use lumen_node::{RollkitPayloadBuilder, RollkitPayloadBuilderConfig};
+use lumen_rollkit::RollkitPayloadAttributes;
+use reth_basic_payload_builder::{
+    BuildArguments, BuildOutcome, HeaderForPayload, PayloadBuilder, PayloadConfig,
+};
+use reth_ethereum::{
+    chainspec::{ChainSpec, ChainSpecProvider},
+    node::{
+        api::{payload::PayloadBuilderAttributes, FullNodeTypes, NodeTypes},
+        builder::{components::PayloadBuilderBuilder, BuilderContext},
+        EthEvmConfig,
+    },
+    pool::{PoolTransaction, TransactionPool},
+    primitives::Header,
+    TransactionSigned,
+};
+use reth_payload_builder::{EthBuiltPayload, PayloadBuilderError};
+use reth_provider::HeaderProvider;
+use reth_revm::cached::CachedReads;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tracing::info;
+
+use crate::{attributes::RollkitEnginePayloadBuilderAttributes, RollkitEngineTypes};
+
+/// Rollkit-specific command line arguments
+#[derive(Debug, Clone, Parser, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct RollkitArgs {
+    /// Enable Rollkit mode for the node (enabled by default)
+    #[arg(
+        long = "rollkit.enable",
+        default_value = "true",
+        help = "Enable Rollkit integration for transaction processing via Engine API"
+    )]
+    pub enable_rollkit: bool,
+}
+
+/// Rollkit payload service builder that integrates with the rollkit payload builder
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct RollkitPayloadBuilderBuilder {
+    config: RollkitPayloadBuilderConfig,
+}
+
+impl RollkitPayloadBuilderBuilder {
+    /// Create a new builder with rollkit args
+    pub fn new(_args: &RollkitArgs) -> Self {
+        let config = RollkitPayloadBuilderConfig {
+            max_transactions: 1000,
+            min_gas_price: 1_000_000_000, // 1 Gwei
+        };
+        info!("Created Rollkit payload builder with config: {:?}", config);
+        Self { config }
+    }
+}
+
+impl Default for RollkitPayloadBuilderBuilder {
+    fn default() -> Self {
+        Self::new(&RollkitArgs::default())
+    }
+}
+
+/// The rollkit engine payload builder that integrates with the rollkit payload builder
+#[derive(Debug, Clone)]
+pub struct RollkitEnginePayloadBuilder<Pool, Client>
+where
+    Pool: Clone,
+    Client: Clone,
+{
+    pub(crate) rollkit_builder: Arc<RollkitPayloadBuilder<Client>>,
+    #[allow(dead_code)]
+    pub(crate) pool: Pool,
+    #[allow(dead_code)]
+    pub(crate) config: RollkitPayloadBuilderConfig,
+}
+
+impl<Node, Pool> PayloadBuilderBuilder<Node, Pool, EthEvmConfig> for RollkitPayloadBuilderBuilder
+where
+    Node: FullNodeTypes<
+        Types: NodeTypes<
+            Payload = RollkitEngineTypes,
+            ChainSpec = ChainSpec,
+            Primitives = reth_ethereum::EthPrimitives,
+        >,
+    >,
+    Pool: TransactionPool<Transaction: PoolTransaction<Consensus = TransactionSigned>>
+        + Unpin
+        + 'static,
+{
+    type PayloadBuilder = RollkitEnginePayloadBuilder<Pool, Node::Provider>;
+
+    async fn build_payload_builder(
+        self,
+        ctx: &BuilderContext<Node>,
+        pool: Pool,
+        evm_config: EthEvmConfig,
+    ) -> eyre::Result<Self::PayloadBuilder> {
+        let rollkit_builder = Arc::new(RollkitPayloadBuilder::new(
+            Arc::new(ctx.provider().clone()),
+            evm_config,
+        ));
+
+        Ok(RollkitEnginePayloadBuilder {
+            rollkit_builder,
+            pool,
+            config: self.config,
+        })
+    }
+}
+
+impl<Pool, Client> PayloadBuilder for RollkitEnginePayloadBuilder<Pool, Client>
+where
+    Client: reth_ethereum::provider::StateProviderFactory
+        + ChainSpecProvider<ChainSpec = ChainSpec>
+        + HeaderProvider<Header = Header>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+    Pool: TransactionPool<Transaction: PoolTransaction<Consensus = TransactionSigned>>,
+{
+    type Attributes = RollkitEnginePayloadBuilderAttributes;
+    type BuiltPayload = EthBuiltPayload;
+
+    fn try_build(
+        &self,
+        args: BuildArguments<Self::Attributes, Self::BuiltPayload>,
+    ) -> Result<BuildOutcome<Self::BuiltPayload>, PayloadBuilderError> {
+        let BuildArguments {
+            cached_reads: _,
+            config,
+            cancel: _,
+            best_payload,
+        } = args;
+        let PayloadConfig {
+            parent_header,
+            attributes,
+        } = config;
+
+        info!(
+            "Rollkit engine payload builder: building payload with {} transactions",
+            attributes.transactions.len()
+        );
+
+        // Convert Engine API attributes to Rollkit payload attributes
+        let rollkit_attrs = RollkitPayloadAttributes::new(
+            attributes.transactions.clone(),
+            attributes.gas_limit,
+            attributes.timestamp(),
+            attributes.prev_randao(),
+            attributes.suggested_fee_recipient(),
+            attributes.parent(),
+            parent_header.number + 1,
+        );
+
+        // Build the payload using the rollkit payload builder - use spawn_blocking for async work
+        let rollkit_builder = self.rollkit_builder.clone();
+        let sealed_block = tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(rollkit_builder.build_payload(rollkit_attrs))
+        })
+        .map_err(PayloadBuilderError::other)?;
+
+        info!(
+            "Rollkit engine payload builder: built block with {} transactions, gas used: {}",
+            sealed_block.transaction_count(),
+            sealed_block.gas_used
+        );
+
+        // Convert to EthBuiltPayload
+        let gas_used = sealed_block.gas_used;
+        let built_payload = EthBuiltPayload::new(
+            attributes.payload_id(), // Use the proper payload ID from attributes
+            Arc::new(sealed_block),
+            U256::from(gas_used), // Block gas used
+            None,                 // No blob sidecar for rollkit
+        );
+
+        if let Some(best) = best_payload {
+            if built_payload.fees() <= best.fees() {
+                return Ok(BuildOutcome::Aborted {
+                    fees: built_payload.fees(),
+                    cached_reads: CachedReads::default(),
+                });
+            }
+        }
+
+        Ok(BuildOutcome::Better {
+            payload: built_payload,
+            cached_reads: CachedReads::default(),
+        })
+    }
+
+    fn build_empty_payload(
+        &self,
+        config: PayloadConfig<Self::Attributes, HeaderForPayload<Self::BuiltPayload>>,
+    ) -> Result<Self::BuiltPayload, PayloadBuilderError> {
+        let PayloadConfig {
+            parent_header,
+            attributes,
+        } = config;
+
+        info!("Rollkit engine payload builder: building empty payload");
+
+        // Create empty rollkit attributes (no transactions)
+        let rollkit_attrs = RollkitPayloadAttributes::new(
+            vec![],
+            attributes.gas_limit,
+            attributes.timestamp(),
+            attributes.prev_randao(),
+            attributes.suggested_fee_recipient(),
+            attributes.parent(),
+            parent_header.number + 1,
+        );
+
+        // Build empty payload - use spawn_blocking for async work
+        let rollkit_builder = self.rollkit_builder.clone();
+        let sealed_block = tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(rollkit_builder.build_payload(rollkit_attrs))
+        })
+        .map_err(PayloadBuilderError::other)?;
+
+        let gas_used = sealed_block.gas_used;
+        Ok(EthBuiltPayload::new(
+            attributes.payload_id(), //TODO: make sure this works
+            Arc::new(sealed_block),
+            U256::from(gas_used),
+            None,
+        ))
+    }
+}
