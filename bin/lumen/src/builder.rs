@@ -223,7 +223,7 @@ where
 
         let gas_used = sealed_block.gas_used;
         Ok(EthBuiltPayload::new(
-            attributes.payload_id(), //TODO: make sure this works
+            attributes.payload_id(),
             Arc::new(sealed_block),
             U256::from(gas_used),
             None,

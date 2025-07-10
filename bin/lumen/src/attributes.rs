@@ -66,7 +66,6 @@ impl PayloadBuilderAttributes for RollkitEnginePayloadBuilderAttributes {
         let ethereum_attributes = EthPayloadBuilderAttributes::new(parent, attributes.inner);
 
         // Decode transactions from bytes if provided
-        let mut transactions = Vec::new();
         let transactions = attributes
             .transactions
             .unwrap_or_default()
@@ -76,7 +75,6 @@ impl PayloadBuilderAttributes for RollkitEnginePayloadBuilderAttributes {
                     .map_err(|e| RollkitEngineError::InvalidTransactionData(e.to_string()))
             })
             .collect::<Result<Vec<_>, _>>()?;
-        }
 
         Ok(Self {
             ethereum_attributes,
