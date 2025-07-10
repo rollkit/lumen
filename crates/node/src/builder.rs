@@ -1,3 +1,4 @@
+use crate::config::RollkitPayloadBuilderConfig;
 use alloy_consensus::transaction::Transaction;
 use lumen_rollkit::RollkitPayloadAttributes;
 use reth_errors::RethError;
@@ -19,6 +20,8 @@ pub struct RollkitPayloadBuilder<Client> {
     pub client: Arc<Client>,
     /// EVM configuration
     pub evm_config: EthEvmConfig,
+    /// Payload builder configuration
+    pub config: RollkitPayloadBuilderConfig,
 }
 
 impl<Client> RollkitPayloadBuilder<Client>
@@ -26,8 +29,16 @@ where
     Client: StateProviderFactory + HeaderProvider<Header = Header> + Send + Sync + 'static,
 {
     /// Creates a new instance of `RollkitPayloadBuilder`
-    pub const fn new(client: Arc<Client>, evm_config: EthEvmConfig) -> Self {
-        Self { client, evm_config }
+    pub fn new(
+        client: Arc<Client>,
+        evm_config: EthEvmConfig,
+        config: RollkitPayloadBuilderConfig,
+    ) -> Self {
+        Self {
+            client,
+            evm_config,
+            config,
+        }
     }
 
     /// Builds a payload using the provided attributes
@@ -87,19 +98,41 @@ where
             .apply_pre_execution_changes()
             .map_err(|err| PayloadBuilderError::Internal(err.into()))?;
 
-        // Execute transactions
+        // Execute transactions with byte tracking
+        let mut total_bytes_used = 0;
+        let mut executed_transactions = 0;
+
         tracing::info!(
             transaction_count = attributes.transactions.len(),
-            "Rollkit payload builder: executing transactions"
+            max_payload_bytes = self.config.max_payload_bytes,
+            "Rollkit payload builder: executing transactions with byte limit"
         );
+
         for (i, tx) in attributes.transactions.iter().enumerate() {
+            // Calculate transaction size (using EIP-2718 encoding length)
+            let tx_size = tx.eip2718_encoded_length();
+
+            // Check if adding this transaction would exceed the byte limit
+            if total_bytes_used + tx_size > self.config.max_payload_bytes {
+                tracing::info!(
+                    "Stopping transaction inclusion at index {} due to byte limit. \
+                     Current: {} bytes, Transaction: {} bytes, Limit: {} bytes",
+                    i,
+                    total_bytes_used,
+                    tx_size,
+                    self.config.max_payload_bytes
+                );
+                break;
+            }
+
             tracing::debug!(
-            index = i,
-            hash = ?tx.hash(),
-            nonce = tx.nonce(),
-            gas_price = ?tx.gas_price(),
-            gas_limit = tx.gas_limit(),
-            "Processing transaction"
+                index = i,
+                hash = ?tx.hash(),
+                nonce = tx.nonce(),
+                gas_price = ?tx.gas_price(),
+                gas_limit = tx.gas_limit(),
+                tx_size = tx_size,
+                "Processing transaction"
             );
 
             // Convert to recovered transaction for execution
@@ -112,14 +145,31 @@ where
             // Execute the transaction
             match builder.execute_transaction(recovered_tx) {
                 Ok(gas_used) => {
-                    tracing::debug!(index = i, gas_used, "Transaction executed successfully");
+                    total_bytes_used += tx_size;
+                    executed_transactions += 1;
+                    tracing::debug!(
+                        index = i,
+                        gas_used,
+                        tx_size,
+                        total_bytes_used,
+                        "Transaction executed successfully"
+                    );
                 }
                 Err(err) => {
                     // Log the error but continue with other transactions
+                    // Don't count bytes for failed transactions
                     tracing::warn!(index = i, error = ?err, "Transaction execution failed");
                 }
             }
         }
+
+        tracing::info!(
+            "Rollkit payload builder: executed {}/{} transactions, used {}/{} bytes",
+            executed_transactions,
+            attributes.transactions.len(),
+            total_bytes_used,
+            self.config.max_payload_bytes
+        );
 
         // Finish building the block - this calculates the proper state root
         let BlockBuilderOutcome {
@@ -143,15 +193,4 @@ where
         // Return the sealed block
         Ok(sealed_block)
     }
-}
-
-/// Creates a new payload builder service
-pub const fn create_payload_builder_service<Client>(
-    client: Arc<Client>,
-    evm_config: EthEvmConfig,
-) -> Option<RollkitPayloadBuilder<Client>>
-where
-    Client: StateProviderFactory + HeaderProvider<Header = Header> + Send + Sync + 'static,
-{
-    Some(RollkitPayloadBuilder::new(client, evm_config))
 }

@@ -15,7 +15,7 @@ use reth_primitives::{Header, Transaction};
 use reth_provider::test_utils::{ExtendedAccount, MockEthProvider};
 use tempfile::TempDir;
 
-use lumen_node::RollkitPayloadBuilder;
+use lumen_node::{RollkitPayloadBuilder, RollkitPayloadBuilderConfig};
 use lumen_rollkit::RollkitPayloadAttributes;
 
 // Test constants
@@ -79,7 +79,8 @@ impl RollkitTestFixture {
             .build();
         let evm_config = EthEvmConfig::new(Arc::new(test_chainspec));
 
-        let builder = RollkitPayloadBuilder::new(Arc::new(provider.clone()), evm_config);
+        let config = RollkitPayloadBuilderConfig::default();
+        let builder = RollkitPayloadBuilder::new(Arc::new(provider.clone()), evm_config, config);
 
         let fixture = Self {
             builder,

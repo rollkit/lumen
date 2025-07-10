@@ -11,5 +11,5 @@ pub mod builder;
 pub mod config;
 
 // Re-export public types
-pub use builder::{create_payload_builder_service, RollkitPayloadBuilder};
+pub use builder::RollkitPayloadBuilder;
 pub use config::{ConfigError, RollkitPayloadBuilderConfig};

@@ -424,8 +424,8 @@ impl RollkitPayloadBuilderBuilder {
     /// Create a new builder with rollkit args
     pub fn new(_args: &RollkitArgs) -> Self {
         let config = RollkitPayloadBuilderConfig {
-            max_transactions: 1000,
             min_gas_price: 1_000_000_000, // 1 Gwei
+            max_payload_bytes: 1_974_272,
         };
         info!("Created Rollkit payload builder with config: {:?}", config);
         Self { config }
@@ -597,6 +597,7 @@ where
         let rollkit_builder = Arc::new(RollkitPayloadBuilder::new(
             Arc::new(ctx.provider().clone()),
             evm_config,
+            self.config.clone(),
         ));
 
         Ok(RollkitEnginePayloadBuilder {
