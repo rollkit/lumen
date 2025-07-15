@@ -1,4 +1,4 @@
-use alloy_primitives::{Address, Bytes, B256};
+use alloy_primitives::{Address, B256};
 use reth_primitives::TransactionSigned;
 use serde::{Deserialize, Serialize};
 
@@ -85,30 +85,4 @@ pub enum PayloadAttributesError {
     /// the specific validation failure.
     #[error("Transaction validation failed: {0}")]
     TransactionValidation(String),
-}
-
-/// A transaction with its weight (size in bytes) for the txpool RPC
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WeightedTransaction {
-    /// RLP-encoded transaction data
-    pub tx: Bytes,
-
-    /// Weight of the transaction (size in bytes)
-    pub weight: i64,
-}
-
-impl WeightedTransaction {
-    /// Creates a new WeightedTransaction from RLP-encoded transaction data
-    pub fn new(tx: Bytes) -> Self {
-        let weight = tx.len() as i64;
-        Self { tx, weight }
-    }
-
-    /// Creates a WeightedTransaction from a signed transaction
-    pub fn from_signed_transaction(tx: &TransactionSigned) -> Self {
-        use alloy_eips::eip2718::Encodable2718;
-        let mut buf = Vec::new();
-        tx.encode_2718(&mut buf);
-        Self::new(buf.into())
-    }
 }

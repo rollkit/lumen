@@ -15,6 +15,10 @@ use alloy_rpc_types::engine::{
     ExecutionPayloadEnvelopeV4, ExecutionPayloadEnvelopeV5, ExecutionPayloadV1,
 };
 use clap::Parser;
+use lumen_rollkit::{
+    config::RollkitConfig,
+    rpc::{create_rollkit_txpool_module, RollkitTxpoolApiServer},
+};
 use reth_ethereum::{
     chainspec::ChainSpec,
     node::{
@@ -36,6 +40,7 @@ use reth_ethereum_cli::{chainspec::EthereumChainSpecParser, Cli};
 use reth_payload_builder::EthBuiltPayload;
 use reth_trie_db::MerklePatriciaTrie;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use tracing::info;
 
 use crate::{
@@ -167,6 +172,16 @@ fn main() {
 
             let handle = builder
                 .node(RollkitNode::new(rollkit_args))
+                .extend_rpc_modules(move |ctx| {
+                    // Build custom txpool RPC
+                    let rollkit_txpool = create_rollkit_txpool_module(
+                        ctx.pool(),
+                        Arc::new(RollkitConfig::default()),
+                    );
+                    // Merge into all enabled transports (HTTP / WS)
+                    ctx.modules.merge_configured(rollkit_txpool.into_rpc())?;
+                    Ok(())
+                })
                 .launch()
                 .await?;
 

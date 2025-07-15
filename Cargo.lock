@@ -4605,6 +4605,7 @@ dependencies = [
  "reth-primitives-traits",
  "reth-rpc-api",
  "reth-rpc-builder",
+ "reth-rpc-eth-api",
  "reth-transaction-pool",
  "serde",
  "serde_json",

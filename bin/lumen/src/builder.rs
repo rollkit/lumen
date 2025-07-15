@@ -50,6 +50,7 @@ impl RollkitPayloadBuilderBuilder {
         let config = RollkitPayloadBuilderConfig {
             max_transactions: 1000,
             min_gas_price: 1_000_000_000, // 1 Gwei
+            max_txpool_bytes: 2_027_520,  // 1.98 MB
         };
         info!("Created Rollkit payload builder with config: {:?}", config);
         Self { config }
