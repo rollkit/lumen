@@ -175,10 +175,12 @@ fn main() {
             let handle = builder
                 .node(RollkitNode::new(rollkit_args))
                 .extend_rpc_modules(move |ctx| {
-                    let pool = ctx.pool().clone();
                     // Build custom txpool RPC
-                    let rollkit_txpool =
-                        RollkitTxpoolApiImpl::new(pool, RollkitConfig::default().max_txpool_bytes);
+                    let rollkit_txpool = RollkitTxpoolApiImpl::new(
+                        ctx.pool(),
+                        RollkitConfig::default().max_txpool_bytes,
+                    );
+
                     // Merge into all enabled transports (HTTP / WS)
                     ctx.modules.merge_configured(rollkit_txpool.into_rpc())?;
                     Ok(())
