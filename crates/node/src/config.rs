@@ -7,6 +7,8 @@ pub struct RollkitPayloadBuilderConfig {
     pub max_transactions: usize,
     /// Minimum gas price for transactions
     pub min_gas_price: u64,
+    /// Maximum bytes of transactions to return from the txpool
+    pub max_txpool_bytes: u64,
 }
 
 impl Default for RollkitPayloadBuilderConfig {
@@ -14,16 +16,18 @@ impl Default for RollkitPayloadBuilderConfig {
         Self {
             max_transactions: 1000,
             min_gas_price: 1_000_000_000, // 1 Gwei
+            max_txpool_bytes: 2_027_520, // 1.98 MB
         }
     }
 }
 
 impl RollkitPayloadBuilderConfig {
     /// Creates a new instance of `RollkitPayloadBuilderConfig`
-    pub const fn new(max_transactions: usize, min_gas_price: u64) -> Self {
+    pub const fn new(max_transactions: usize, min_gas_price: u64, max_txpool_bytes: u64) -> Self {
         Self {
             max_transactions,
             min_gas_price,
+            max_txpool_bytes,
         }
     }
 
