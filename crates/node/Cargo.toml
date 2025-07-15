@@ -1,77 +1,77 @@
 [package]
-name = "lumen-node"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
-homepage.workspace = true
-repository.workspace = true
 description = "Lumen node implementation"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+name = "lumen-node"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
 # Lumen dependencies
-lumen-common = { path = "../common" }
-lumen-rollkit = { path = "../rollkit" }
+lumen-common = {path = "../common"}
+lumen-rollkit = {path = "../rollkit"}
 
 # Reth dependencies
-reth-node-builder.workspace = true
-reth-chainspec.workspace = true
-reth-ethereum-payload-builder.workspace = true
-reth-payload-primitives.workspace = true
-reth-primitives.workspace = true
-reth-primitives-traits.workspace = true
-reth-node-api.workspace = true
-reth-provider = { workspace = true, features = ["test-utils"] }
-reth-payload-builder.workspace = true
 reth-basic-payload-builder.workspace = true
+reth-chainspec.workspace = true
 reth-engine-local.workspace = true
+reth-ethereum-payload-builder.workspace = true
+reth-node-api.workspace = true
+reth-node-builder.workspace = true
+reth-payload-builder.workspace = true
+reth-payload-primitives.workspace = true
+reth-primitives-traits.workspace = true
+reth-primitives.workspace = true
+reth-provider = {workspace = true, features = ["test-utils"]}
 reth-revm.workspace = true
 reth-trie-db.workspace = true
 
 # Additional reth dependencies for payload builder
-reth-node-types.workspace = true
-reth-payload-builder-primitives.workspace = true
-reth-execution-types.workspace = true
+reth-engine-primitives.workspace = true
+reth-errors.workspace = true
+reth-ethereum-primitives.workspace = true
 reth-evm-ethereum.workspace = true
 reth-evm.workspace = true
-reth-errors.workspace = true
+reth-execution-types.workspace = true
 reth-node-core.workspace = true
-reth-rpc-builder.workspace = true
+reth-node-types.workspace = true
+reth-payload-builder-primitives.workspace = true
 reth-rpc-api.workspace = true
+reth-rpc-builder.workspace = true
 reth-rpc-engine-api.workspace = true
-reth-engine-primitives.workspace = true
-reth-ethereum-primitives.workspace = true
 
 # Alloy dependencies
-alloy-rpc-types.workspace = true
-alloy-rpc-types-engine.workspace = true
-alloy-primitives.workspace = true
-alloy-eips.workspace = true
 alloy-consensus.workspace = true
+alloy-eips.workspace = true
+alloy-primitives.workspace = true
 alloy-rlp.workspace = true
+alloy-rpc-types-engine.workspace = true
+alloy-rpc-types.workspace = true
 
 # Core dependencies
+async-trait.workspace = true
 eyre.workspace = true
-tracing.workspace = true
-tokio = { workspace = true, features = ["full"] }
-serde = { workspace = true, features = ["derive"] }
+futures.workspace = true
+serde = {workspace = true, features = ["derive"]}
 serde_json.workspace = true
 thiserror.workspace = true
-async-trait.workspace = true
-futures.workspace = true
+tokio = {workspace = true, features = ["full"]}
+tracing.workspace = true
 
 [dev-dependencies]
 # Test dependencies
-reth-testing-utils.workspace = true
+alloy-genesis.workspace = true
+hex = "0.4"
+reth-consensus.workspace = true
 reth-db.workspace = true
 reth-evm-ethereum.workspace = true
-reth-transaction-pool.workspace = true
-reth-consensus.workspace = true
 reth-tasks.workspace = true
+reth-testing-utils.workspace = true
 reth-tracing.workspace = true
-alloy-genesis.workspace = true
+reth-transaction-pool.workspace = true
 tempfile.workspace = true
-hex = "0.4"
 
 [lints]
 workspace = true

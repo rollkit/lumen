@@ -1,12 +1,12 @@
 [package]
-name = "lumen"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
-homepage.workspace = true
-repository.workspace = true
 description = "Lumen node binary"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+name = "lumen"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [[bin]]
 name = "lumen"
@@ -14,39 +14,38 @@ path = "src/main.rs"
 
 [dependencies]
 # Core lumen crates
-lumen-node = { path = "../../crates/node" }
-lumen-common = { path = "../../crates/common" }
-lumen-rollkit = { path = "../../crates/rollkit" }
+lumen-common = {path = "../../crates/common"}
+lumen-node = {path = "../../crates/node"}
+lumen-rollkit = {path = "../../crates/rollkit"}
 
 # Reth CLI and core dependencies
-reth-cli-util.workspace = true
-reth-ethereum-cli.workspace = true
-reth-ethereum = { workspace = true, features = ["node", "cli", "pool"] }
-reth-node-builder.workspace = true
-reth-chainspec.workspace = true
-reth-primitives-traits.workspace = true
-reth-engine-local.workspace = true
 reth-basic-payload-builder.workspace = true
+reth-chainspec.workspace = true
+reth-cli-util.workspace = true
+reth-engine-local.workspace = true
+reth-ethereum = {workspace = true, features = ["node", "cli", "pool"]}
+reth-ethereum-cli.workspace = true
 reth-ethereum-payload-builder.workspace = true
+reth-node-builder.workspace = true
 reth-payload-builder.workspace = true
-reth-revm.workspace = true
+reth-primitives-traits.workspace = true
 reth-provider.workspace = true
+reth-revm.workspace = true
 reth-trie-db.workspace = true
 
 # Alloy dependencies
-alloy-network.workspace = true
-alloy-rpc-types.workspace = true
-alloy-primitives.workspace = true
 alloy-eips.workspace = true
-
+alloy-network.workspace = true
+alloy-primitives.workspace = true
+alloy-rpc-types.workspace = true
 
 # Core dependencies
+clap = {workspace = true, features = ["derive", "env"]}
 eyre.workspace = true
-tracing.workspace = true
-tokio = { workspace = true, features = ["full"] }
-clap = { workspace = true, features = ["derive", "env"] }
-serde = { workspace = true, features = ["derive"] }
+serde = {workspace = true, features = ["derive"]}
 thiserror.workspace = true
+tokio = {workspace = true, features = ["full"]}
+tracing.workspace = true
 
 [lints]
 workspace = true
@@ -62,8 +61,8 @@ asm-keccak = ["reth-ethereum-cli/asm-keccak"]
 
 dev = ["reth-ethereum-cli/dev", "reth-ethereum/arbitrary"]
 
-min-error-logs = ["tracing/release_max_level_error"]
-min-warn-logs = ["tracing/release_max_level_warn"]
-min-info-logs = ["tracing/release_max_level_info"]
 min-debug-logs = ["tracing/release_max_level_debug"]
+min-error-logs = ["tracing/release_max_level_error"]
+min-info-logs = ["tracing/release_max_level_info"]
 min-trace-logs = ["tracing/release_max_level_trace"]
+min-warn-logs = ["tracing/release_max_level_warn"]
