@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["bin/lumen", "crates/common", "crates/node", "crates/rollkit", "crates/tests"]
+members = [
+  "bin/lumen",
+  "crates/common",
+  "crates/node",
+  "crates/rollkit",
+  "crates/tests",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -69,11 +75,11 @@ reth-tasks = { git = "https://github.com/paradigmxyz/reth.git", version = "1.5.0
 
 # Alloy dependencies
 alloy = { version = "1.0.17", features = [
-    "contract",
-    "providers",
-    "provider-http",
-    "signers",
-    "reqwest-rustls-tls",
+  "contract",
+  "providers",
+  "provider-http",
+  "signers",
+  "reqwest-rustls-tls",
 ], default-features = false }
 alloy-eips = { version = "1.0.17", default-features = false }
 alloy-network = { version = "1.0.17", default-features = false }
@@ -88,6 +94,7 @@ alloy-primitives = { version = "1.2.0", default-features = false }
 alloy-consensus = { version = "1.0.17", default-features = false }
 alloy-rlp = { version = "0.3", default-features = false }
 alloy-genesis = { version = "1.0.17", default-features = false }
+alloy-rpc-types-txpool = { version = "1.0.17", default-features = false }
 
 # Core dependencies
 eyre = "0.6"
@@ -100,6 +107,13 @@ async-trait = "0.1"
 futures = "0.3"
 clap = { version = "4.5", features = ["derive", "env"] }
 
+
+jsonrpsee = "0.25.1"
+jsonrpsee-core = "0.25.1"
+jsonrpsee-server = "0.25.1"
+jsonrpsee-http-client = "0.25.1"
+jsonrpsee-types = "0.25.1"
+jsonrpsee-proc-macros = "0.25.1"
 # Additional dependencies
 reqwest = { version = "0.11", features = ["json"] }
 chrono = { version = "0.4", features = ["serde"] }

@@ -9,23 +9,37 @@ This project provides a modified version of Reth that includes:
 - **Custom Payload Builder**: A specialized payload builder that accepts transactions through Engine API payload attributes
 - **Rollkit-Compatible Engine API**: Modified Engine API validation to work with Rollkit's block production model
 - **Transaction Support**: Full support for including transactions in blocks via the Engine API `engine_forkchoiceUpdatedV3` method
+- **Txpool RPC Extension**: Custom `txpoolExt_getTxs` RPC method for efficient transaction retrieval with configurable size limits
 
 ## Key Features
 
 ### 1. Engine API Transaction Support
+
 Unlike standard Reth, Lumen accepts transactions directly through the Engine API payload attributes. This allows Rollkit to submit transactions when requesting new payload creation.
 
 ### 2. Custom Payload Builder
+
 The `RollkitPayloadBuilder` handles:
+
 - Transaction decoding from Engine API attributes
 - Block construction with proper gas limits
 - State execution and validation
 
 ### 3. Flexible Block Validation
+
 Modified Engine API validator that:
+
 - Bypasses block hash validation for Rollkit blocks
 - Supports custom gas limits per payload
 - Maintains compatibility with standard Ethereum validation where possible
+
+### 4. Txpool RPC Extension
+
+Custom RPC namespace `txpoolExt` that provides:
+
+- `txpoolExt_getTxs`: Retrieves pending transactions from the pool as RLP-encoded hex strings
+- Configurable byte limit for transaction retrieval (default: 1.98 MB)
+- Efficient iteration that stops when reaching the byte limit
 
 ## Installation
 
@@ -53,11 +67,13 @@ make test
 ### Running the Lumen Node
 
 Basic usage:
+
 ```bash
 ./target/release/lumen node
 ```
 
 With custom configuration:
+
 ```bash
 ./target/release/lumen node \
     --chain <CHAIN_SPEC> \
@@ -94,6 +110,33 @@ When using the Engine API, you can include transactions in the payload attribute
 }
 ```
 
+### Txpool RPC Usage
+
+To retrieve pending transactions from the txpool:
+
+```bash
+# Using curl
+curl -X POST http://localhost:8545 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "txpoolExt_getTxs",
+    "params": [],
+    "id": 1
+  }'
+
+# Response format
+{
+  "jsonrpc": "2.0",
+  "result": [
+    "0xf86d...",  // RLP-encoded transaction 1
+    "0xf86e...",  // RLP-encoded transaction 2
+    // ... more transactions up to the byte limit
+  ],
+  "id": 1
+}
+```
+
 ## Architecture
 
 ### Modular Design
@@ -103,10 +146,11 @@ Lumen follows a modular architecture similar to Odyssey, with clear separation o
 - **`bin/lumen`**: The main executable binary
 - **`crates/common`**: Shared utilities and constants used across all crates
 - **`crates/node`**: Core node implementation including the payload builder
-- **`crates/rollkit`**: Rollkit-specific types and integration logic
+- **`crates/rollkit`**: Rollkit-specific types, RPC extensions, and integration logic
 - **`crates/tests`**: Comprehensive test suite including unit and integration tests
 
 This modular design allows for:
+
 - Better code organization and maintainability
 - Easier testing of individual components
 - Clear separation between Rollkit-specific and general node logic
@@ -130,6 +174,11 @@ This modular design allows for:
    - Rollkit-specific payload attributes and types
    - Transaction encoding/decoding utilities
 
+5. **Rollkit Txpool RPC** (`crates/rollkit/src/rpc/txpool.rs`)
+   - Custom RPC implementation for transaction pool queries
+   - Efficient transaction retrieval with size-based limits
+   - Returns RLP-encoded transactions for Rollkit consumption
+
 ### Transaction Flow
 
 1. Rollkit submits transactions via Engine API payload attributes
@@ -142,8 +191,15 @@ This modular design allows for:
 ### Payload Builder Configuration
 
 The payload builder can be configured with:
+
 - `max_transactions`: Maximum transactions per block (default: 1000)
 - `min_gas_price`: Minimum gas price requirement (default: 1 Gwei)
+
+### Txpool RPC Configuration
+
+The txpool RPC extension can be configured with:
+
+- `max_txpool_bytes`: Maximum bytes of transactions to return (default: 1.98 MB)
 
 ### Node Configuration
 
@@ -181,7 +237,11 @@ lumen/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
-│   │       └── types.rs       # Rollkit payload attributes
+│   │       ├── config.rs      # Rollkit configuration
+│   │       ├── types.rs       # Rollkit payload attributes
+│   │       └── rpc/
+│   │           ├── mod.rs
+│   │           └── txpool.rs  # Txpool RPC implementation
 │   └── tests/                  # Comprehensive test suite
 │       ├── Cargo.toml
 │       └── src/
@@ -236,6 +296,7 @@ make run-dev
 ### Debug Logging
 
 Enable detailed logging:
+
 ```bash
 RUST_LOG=debug,lumen=trace ./target/release/lumen node
 ```
@@ -259,5 +320,6 @@ This project is dual-licensed under:
 ## Acknowledgments
 
 This project builds upon the excellent work of:
+
 - [Reth](https://github.com/paradigmxyz/reth) - The Rust Ethereum client
 - [Rollkit](https://rollkit.dev/) - The modular rollup framework

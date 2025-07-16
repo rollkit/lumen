@@ -14,6 +14,7 @@ reth-payload-primitives.workspace = true
 reth-primitives.workspace = true
 reth-primitives-traits.workspace = true
 reth-engine-primitives.workspace = true
+reth-transaction-pool.workspace = true
 
 # Alloy dependencies
 alloy-rpc-types-engine.workspace = true
@@ -21,10 +22,15 @@ alloy-primitives.workspace = true
 alloy-eips.workspace = true
 alloy-consensus.workspace = true
 alloy-rlp.workspace = true
+alloy-rpc-types-txpool.workspace = true
 
 # Core dependencies
 serde = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
+async-trait.workspace = true
+jsonrpsee = { workspace = true, features = ["server", "macros"] }
+jsonrpsee-core.workspace = true
+jsonrpsee-proc-macros.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

@@ -15,6 +15,10 @@ use alloy_rpc_types::engine::{
     ExecutionPayloadEnvelopeV4, ExecutionPayloadEnvelopeV5, ExecutionPayloadV1,
 };
 use clap::Parser;
+use lumen_rollkit::{
+    config::RollkitConfig,
+    rpc::txpool::{RollkitTxpoolApiImpl, RollkitTxpoolApiServer},
+};
 use reth_ethereum::{
     chainspec::ChainSpec,
     node::{
@@ -167,6 +171,17 @@ fn main() {
 
             let handle = builder
                 .node(RollkitNode::new(rollkit_args))
+                .extend_rpc_modules(move |ctx| {
+                    // Build custom txpool RPC
+                    let rollkit_txpool = RollkitTxpoolApiImpl::new(
+                        ctx.pool().clone(),
+                        RollkitConfig::default().max_txpool_bytes,
+                    );
+
+                    // Merge into all enabled transports (HTTP / WS)
+                    ctx.modules.merge_configured(rollkit_txpool.into_rpc())?;
+                    Ok(())
+                })
                 .launch()
                 .await?;
 
