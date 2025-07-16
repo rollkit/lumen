@@ -2,14 +2,14 @@ use alloy_primitives::{hex::encode as hex_encode, Address};
 use alloy_rlp::encode as rlp_encode;
 use alloy_rpc_types_txpool::TxpoolContent;
 use async_trait::async_trait;
-use jsonrpsee::{core::RpcResult, proc_macros::rpc, RpcModule};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use reth_transaction_pool::{TransactionPool, ValidPoolTransaction};
 use std::collections::BTreeMap;
 
 /// Rollkit txpool RPC API trait
 #[rpc(server, namespace = "txpoolExt")]
 pub trait RollkitTxpoolApi {
-    /// Get transactions from the pool up to the configured max_bytes limit
+    /// Get transactions from the pool up to the configured `max_bytes` limit
     #[method(name = "getTxs")]
     async fn get_txs(&self) -> RpcResult<TxpoolContent<String>>;
 }
@@ -31,7 +31,10 @@ impl<Pool> RollkitTxpoolApiImpl<Pool> {
 }
 
 /// Creates a new Rollkit txpool RPC module
-pub fn create_rollkit_txpool_module<Pool>(pool: Pool, max_bytes: u64) -> RollkitTxpoolApiImpl<Pool>
+pub const fn create_rollkit_txpool_module<Pool>(
+    pool: Pool,
+    max_bytes: u64,
+) -> RollkitTxpoolApiImpl<Pool>
 where
     Pool: TransactionPool + Send + Sync + 'static,
 {
@@ -43,7 +46,7 @@ impl<Pool> RollkitTxpoolApiServer for RollkitTxpoolApiImpl<Pool>
 where
     Pool: TransactionPool + Send + Sync + 'static,
 {
-    /// Returns a Geth-style TxpoolContent with raw RLP hex strings.
+    /// Returns a Geth-style `TxpoolContent` with raw RLP hex strings.
     async fn get_txs(&self) -> RpcResult<TxpoolContent<String>> {
         //------------------------------------------------------------------//
         // 1. Iterate pending txs and stop once we hit the byte cap         //

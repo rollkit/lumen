@@ -17,10 +17,7 @@ use alloy_rpc_types::engine::{
 use clap::Parser;
 use lumen_rollkit::{
     config::RollkitConfig,
-    rpc::{
-        create_rollkit_txpool_module,
-        txpool::{RollkitTxpoolApiImpl, RollkitTxpoolApiServer},
-    },
+    rpc::txpool::{RollkitTxpoolApiImpl, RollkitTxpoolApiServer},
 };
 use reth_ethereum::{
     chainspec::ChainSpec,
@@ -177,7 +174,7 @@ fn main() {
                 .extend_rpc_modules(move |ctx| {
                     // Build custom txpool RPC
                     let rollkit_txpool = RollkitTxpoolApiImpl::new(
-                        ctx.pool(),
+                        ctx.pool().clone(),
                         RollkitConfig::default().max_txpool_bytes,
                     );
 
