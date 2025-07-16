@@ -16,7 +16,7 @@ impl Default for RollkitPayloadBuilderConfig {
         Self {
             max_transactions: 1000,
             min_gas_price: 1_000_000_000, // 1 Gwei
-            max_txpool_bytes: 2_027_520, // 1.98 MB
+            max_txpool_bytes: 2_027_520,  // 1.98 MB
         }
     }
 }
