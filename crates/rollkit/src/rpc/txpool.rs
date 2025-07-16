@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 pub trait RollkitTxpoolApi {
     /// Get transactions from the pool up to the configured `max_bytes` limit
     #[method(name = "getTxs")]
-    async fn get_txs(&self) -> RpcResult<TxpoolContent<String>>;
+    async fn get_txs(&self) -> RpcResult<Vec<String>>;
 }
 
 /// Implementation of the Rollkit txpool RPC API
@@ -47,12 +47,12 @@ where
     Pool: TransactionPool + Send + Sync + 'static,
 {
     /// Returns a Geth-style `TxpoolContent` with raw RLP hex strings.
-    async fn get_txs(&self) -> RpcResult<TxpoolContent<String>> {
+    async fn get_txs(&self) -> RpcResult<Vec<String>> {
         //------------------------------------------------------------------//
         // 1. Iterate pending txs and stop once we hit the byte cap         //
         //------------------------------------------------------------------//
         let mut total = 0u64;
-        let mut pending_map: BTreeMap<Address, BTreeMap<String, String>> = BTreeMap::new();
+        let mut pending_map: Vec<String> = Vec::new();
 
         for arc_tx in self.pool.pending_transactions() {
             // deref Arc<ValidPoolTransaction<_>>
@@ -63,30 +63,18 @@ where
                 break;
             }
 
-            // sender / nonce helpers come from PoolTransaction
-            let sender = pooled.sender();
-            let nonce = pooled.nonce().to_string();
-
             // inside the loop
             let tx = pooled.to_consensus();
             let mut rlp_bytes = Vec::new();
             tx.encode(&mut rlp_bytes); // encode into Vec<u8>
             let rlp_hex = format!("0x{}", hex_encode(&rlp_bytes));
 
-            pending_map
-                .entry(sender)
-                .or_default()
-                .insert(nonce, rlp_hex);
+            pending_map.push(rlp_hex);
 
             total += sz;
         }
 
-        let content = TxpoolContent {
-            pending: pending_map,
-            queued: BTreeMap::new(), // not collected for now
-        };
-
-        Ok(content)
+        Ok(pending_map)
     }
 }
 
@@ -106,11 +94,11 @@ mod tests {
     fn test_rollkit_txpool_api_creation() {
         // This test verifies that we can create the API with different max_bytes values
         // The actual behavior testing would require a mock transaction pool
-        
+
         // Test with default config
         let config = RollkitConfig::default();
         assert_eq!(config.max_txpool_bytes, 1_980 * 1024);
-        
+
         // Test with custom config
         let custom_config = RollkitConfig::new(1000);
         assert_eq!(custom_config.max_txpool_bytes, 1000);
