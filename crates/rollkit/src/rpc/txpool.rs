@@ -1,10 +1,8 @@
-use alloy_primitives::{hex::encode as hex_encode, Address};
+use alloy_primitives::hex::encode as hex_encode;
 use alloy_rlp::Encodable;
-use alloy_rpc_types_txpool::TxpoolContent;
 use async_trait::async_trait;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use reth_transaction_pool::{TransactionPool, ValidPoolTransaction};
-use std::collections::BTreeMap;
 
 /// Rollkit txpool RPC API trait
 #[rpc(server, namespace = "txpoolExt")]
