@@ -1,7 +1,8 @@
 use alloy_primitives::hex::encode as hex_encode;
 use alloy_rlp::Encodable;
 use async_trait::async_trait;
-use jsonrpsee::{core::RpcResult, proc_macros::rpc};
+use jsonrpsee_core::RpcResult;
+use jsonrpsee_proc_macros::rpc;
 use reth_transaction_pool::{TransactionPool, ValidPoolTransaction};
 
 /// Rollkit txpool RPC API trait

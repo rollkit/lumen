@@ -4511,6 +4511,8 @@ dependencies = [
  "alloy-rpc-types-txpool",
  "async-trait",
  "jsonrpsee",
+ "jsonrpsee-core",
+ "jsonrpsee-proc-macros",
  "reth-engine-primitives",
  "reth-payload-primitives",
  "reth-primitives",
