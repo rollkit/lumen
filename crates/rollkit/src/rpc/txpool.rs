@@ -1,5 +1,5 @@
 use alloy_primitives::{hex::encode as hex_encode, Address};
-use alloy_rlp::encode as rlp_encode;
+use alloy_rlp::Encodable;
 use alloy_rpc_types_txpool::TxpoolContent;
 use async_trait::async_trait;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
@@ -69,7 +69,8 @@ where
 
             // inside the loop
             let tx = pooled.to_consensus();
-            let rlp_bytes = rlp_encode(&tx); // Vec<u8>
+            let mut rlp_bytes = Vec::new();
+            tx.encode(&mut rlp_bytes); // encode into Vec<u8>
             let rlp_hex = format!("0x{}", hex_encode(&rlp_bytes));
 
             pending_map
@@ -86,5 +87,32 @@ where
         };
 
         Ok(content)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::{RollkitConfig, DEFAULT_MAX_TXPOOL_BYTES};
+
+    #[test]
+    fn test_default_config_value() {
+        // Test that the default max_txpool_bytes value is correctly set
+        let config = RollkitConfig::default();
+        assert_eq!(config.max_txpool_bytes, DEFAULT_MAX_TXPOOL_BYTES);
+        assert_eq!(DEFAULT_MAX_TXPOOL_BYTES, 1_980 * 1024); // 1.98 MB
+    }
+
+    #[test]
+    fn test_rollkit_txpool_api_creation() {
+        // This test verifies that we can create the API with different max_bytes values
+        // The actual behavior testing would require a mock transaction pool
+        
+        // Test with default config
+        let config = RollkitConfig::default();
+        assert_eq!(config.max_txpool_bytes, 1_980 * 1024);
+        
+        // Test with custom config
+        let custom_config = RollkitConfig::new(1000);
+        assert_eq!(custom_config.max_txpool_bytes, 1000);
     }
 }
