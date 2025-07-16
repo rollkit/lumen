@@ -1,4 +1,4 @@
-use alloy_primitives::hex::encode as hex_encode;
+use alloy_primitives::Bytes;
 use alloy_rlp::Encodable;
 use async_trait::async_trait;
 use jsonrpsee_core::RpcResult;
@@ -10,7 +10,7 @@ use reth_transaction_pool::{TransactionPool, ValidPoolTransaction};
 pub trait RollkitTxpoolApi {
     /// Get transactions from the pool up to the configured `max_bytes` limit
     #[method(name = "getTxs")]
-    async fn get_txs(&self) -> RpcResult<Vec<String>>;
+    async fn get_txs(&self) -> RpcResult<Vec<Bytes>>;
 }
 
 /// Implementation of the Rollkit txpool RPC API
@@ -46,12 +46,12 @@ where
     Pool: TransactionPool + Send + Sync + 'static,
 {
     /// Returns a Geth-style `TxpoolContent` with raw RLP hex strings.
-    async fn get_txs(&self) -> RpcResult<Vec<String>> {
+    async fn get_txs(&self) -> RpcResult<Vec<Bytes>> {
         //------------------------------------------------------------------//
         // 1. Iterate pending txs and stop once we hit the byte cap         //
         //------------------------------------------------------------------//
         let mut total = 0u64;
-        let mut pending_map: Vec<String> = Vec::new();
+        let mut pending_map: Vec<Bytes> = Vec::new();
 
         for arc_tx in self.pool.pending_transactions() {
             // deref Arc<ValidPoolTransaction<_>>
@@ -65,10 +65,9 @@ where
             // inside the loop
             let tx = pooled.to_consensus();
             let mut rlp_bytes = Vec::new();
-            tx.encode(&mut rlp_bytes); // encode into Vec<u8>
-            let rlp_hex = format!("0x{}", hex_encode(&rlp_bytes));
+            tx.encode(&mut rlp_bytes);
 
-            pending_map.push(rlp_hex);
+            pending_map.push(Bytes::from(rlp_bytes));
 
             total += sz;
         }

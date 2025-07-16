@@ -37,7 +37,7 @@ Modified Engine API validator that:
 
 Custom RPC namespace `txpoolExt` that provides:
 
-- `txpoolExt_getTxs`: Retrieves pending transactions from the pool as RLP-encoded hex strings
+- `txpoolExt_getTxs`: Retrieves pending transactions from the pool as RLP-encoded bytes
 - Configurable byte limit for transaction retrieval (default: 1.98 MB)
 - Efficient iteration that stops when reaching the byte limit
 
@@ -129,8 +129,8 @@ curl -X POST http://localhost:8545 \
 {
   "jsonrpc": "2.0",
   "result": [
-    "0xf86d...",  // RLP-encoded transaction 1
-    "0xf86e...",  // RLP-encoded transaction 2
+    "0xf86d...",  // RLP-encoded transaction bytes 1
+    "0xf86e...",  // RLP-encoded transaction bytes 2
     // ... more transactions up to the byte limit
   ],
   "id": 1
@@ -177,7 +177,7 @@ This modular design allows for:
 5. **Rollkit Txpool RPC** (`crates/rollkit/src/rpc/txpool.rs`)
    - Custom RPC implementation for transaction pool queries
    - Efficient transaction retrieval with size-based limits
-   - Returns RLP-encoded transactions for Rollkit consumption
+   - Returns RLP-encoded transaction bytes for Rollkit consumption
 
 ### Transaction Flow
 
