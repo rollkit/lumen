@@ -1,4 +1,4 @@
-use alloy_primitives::{hex::encode as hex_encode, Bytes};
+use alloy_primitives::Bytes;
 use alloy_rlp::Encodable;
 use async_trait::async_trait;
 use jsonrpsee_core::RpcResult;
