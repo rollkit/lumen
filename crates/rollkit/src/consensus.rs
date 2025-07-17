@@ -8,7 +8,7 @@ use reth_ethereum_consensus::EthBeaconConsensus;
 use reth_ethereum_primitives::{Block, BlockBody, EthPrimitives, Receipt};
 use reth_execution_types::BlockExecutionResult;
 use reth_node_api::{FullNodeTypes, NodeTypes};
-use reth_primitives::{GotExpected, GotExpectedBoxed, RecoveredBlock, SealedBlock, SealedHeader};
+use reth_primitives::{RecoveredBlock, SealedBlock, SealedHeader};
 use std::sync::Arc;
 
 /// Builder for `RollkitConsensus`
