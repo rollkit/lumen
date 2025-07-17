@@ -72,6 +72,9 @@ impl HeaderValidator for RollkitConsensus {
     ) -> Result<(), ConsensusError> {
         match self.inner.validate_header_against_parent(header, parent) {
             Ok(()) => Ok(()),
+            // upstream the check is that its greater than the parent's timestamp, if not we get
+            // TimestampIsInPast we check if the timestamp is equal to the parent's timestamp, if so we
+            // allow it
             Err(ConsensusError::TimestampIsInPast { .. }) => {
                 if header.timestamp == parent.timestamp {
                     Ok(())
