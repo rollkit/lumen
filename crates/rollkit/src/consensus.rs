@@ -3,11 +3,42 @@
 use reth_chainspec::ChainSpec;
 use reth_consensus::{Consensus, ConsensusError, FullConsensus, HeaderValidator};
 use reth_consensus_common::validation::validate_body_against_header;
+use reth_ethereum::node::builder::{components::ConsensusBuilder, BuilderContext};
 use reth_ethereum_consensus::EthBeaconConsensus;
 use reth_ethereum_primitives::{Block, BlockBody, EthPrimitives, Receipt};
 use reth_execution_types::BlockExecutionResult;
+use reth_node_api::{FullNodeTypes, NodeTypes};
 use reth_primitives::{GotExpected, GotExpectedBoxed, RecoveredBlock, SealedBlock, SealedHeader};
 use std::sync::Arc;
+
+/// Builder for `RollkitConsensus`
+#[derive(Debug, Default, Clone)]
+#[non_exhaustive]
+pub struct RollkitConsensusBuilder;
+
+impl RollkitConsensusBuilder {
+    /// Create a new `RollkitConsensusBuilder`
+    pub const fn new() -> Self {
+        Self
+    }
+
+    /// Build the consensus implementation
+    pub fn build(chain_spec: Arc<ChainSpec>) -> Arc<RollkitConsensus> {
+        Arc::new(RollkitConsensus::new(chain_spec))
+    }
+}
+
+impl<Node> ConsensusBuilder<Node> for RollkitConsensusBuilder
+where
+    Node: FullNodeTypes,
+    Node::Types: NodeTypes<ChainSpec = ChainSpec, Primitives = EthPrimitives>,
+{
+    type Consensus = Arc<dyn FullConsensus<EthPrimitives, Error = ConsensusError>>;
+
+    async fn build_consensus(self, ctx: &BuilderContext<Node>) -> eyre::Result<Self::Consensus> {
+        Ok(Arc::new(RollkitConsensus::new(ctx.chain_spec())) as Self::Consensus)
+    }
+}
 
 /// Rollkit consensus implementation that allows blocks with the same timestamp.
 ///
@@ -109,26 +140,5 @@ impl FullConsensus<EthPrimitives> for RollkitConsensus {
         result: &BlockExecutionResult<Receipt>,
     ) -> Result<(), ConsensusError> {
         <EthBeaconConsensus<ChainSpec> as FullConsensus<EthPrimitives>>::validate_block_post_execution(&self.inner, block, result)
-    }
-}
-
-/// Builder for `RollkitConsensus`
-#[derive(Debug, Default, Clone)]
-#[non_exhaustive]
-pub struct RollkitConsensusBuilder;
-
-impl RollkitConsensusBuilder {
-    /// Create a new `RollkitConsensusBuilder`
-    pub const fn new() -> Self {
-        Self
-    }
-}
-
-// Instead of implementing the generic ConsensusBuilder trait,
-// we'll use a direct approach that works with the node builder
-impl RollkitConsensusBuilder {
-    /// Build the consensus implementation
-    pub fn build(chain_spec: Arc<ChainSpec>) -> Arc<RollkitConsensus> {
-        Arc::new(RollkitConsensus::new(chain_spec))
     }
 }

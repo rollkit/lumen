@@ -7,7 +7,6 @@
 
 pub mod attributes;
 pub mod builder;
-pub mod consensus_builder;
 pub mod error;
 pub mod validator;
 
@@ -18,6 +17,7 @@ use alloy_rpc_types::engine::{
 use clap::Parser;
 use lumen_rollkit::{
     config::RollkitConfig,
+    consensus::RollkitConsensusBuilder,
     rpc::txpool::{RollkitTxpoolApiImpl, RollkitTxpoolApiServer},
 };
 use reth_ethereum::{
@@ -43,7 +43,6 @@ use tracing::info;
 use crate::{
     attributes::{RollkitEnginePayloadAttributes, RollkitEnginePayloadBuilderAttributes},
     builder::{RollkitArgs, RollkitPayloadBuilderBuilder},
-    consensus_builder::RollkitConsensusBuilder,
     validator::RollkitEngineValidatorBuilder,
 };
 
@@ -141,7 +140,7 @@ where
                 RollkitPayloadBuilderBuilder::new(&self.args),
             ))
             .network(EthereumNetworkBuilder::default())
-            .consensus(RollkitConsensusBuilder)
+            .consensus(RollkitConsensusBuilder::default())
     }
 
     fn add_ons(&self) -> Self::AddOns {
