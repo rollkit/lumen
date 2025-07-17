@@ -7,6 +7,7 @@
 
 pub mod attributes;
 pub mod builder;
+pub mod consensus_builder;
 pub mod error;
 pub mod validator;
 
@@ -28,10 +29,7 @@ use reth_ethereum::{
             rpc::RpcAddOns,
             Node, NodeAdapter, NodeComponentsBuilder,
         },
-        node::{
-            EthereumConsensusBuilder, EthereumExecutorBuilder, EthereumNetworkBuilder,
-            EthereumPoolBuilder,
-        },
+        node::{EthereumExecutorBuilder, EthereumNetworkBuilder, EthereumPoolBuilder},
         EthereumEthApiBuilder,
     },
     primitives::SealedBlock,
@@ -45,6 +43,7 @@ use tracing::info;
 use crate::{
     attributes::{RollkitEnginePayloadAttributes, RollkitEnginePayloadBuilderAttributes},
     builder::{RollkitArgs, RollkitPayloadBuilderBuilder},
+    consensus_builder::RollkitConsensusBuilder,
     validator::RollkitEngineValidatorBuilder,
 };
 
@@ -127,7 +126,7 @@ where
         BasicPayloadServiceBuilder<RollkitPayloadBuilderBuilder>,
         EthereumNetworkBuilder,
         EthereumExecutorBuilder,
-        EthereumConsensusBuilder,
+        RollkitConsensusBuilder,
     >;
     type AddOns = RollkitNodeAddOns<
         NodeAdapter<N, <Self::ComponentsBuilder as NodeComponentsBuilder<N>>::Components>,
@@ -142,7 +141,7 @@ where
                 RollkitPayloadBuilderBuilder::new(&self.args),
             ))
             .network(EthereumNetworkBuilder::default())
-            .consensus(EthereumConsensusBuilder::default())
+            .consensus(RollkitConsensusBuilder)
     }
 
     fn add_ons(&self) -> Self::AddOns {

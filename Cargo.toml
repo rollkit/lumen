@@ -67,8 +67,12 @@ reth-rpc-engine-api = { git = "https://github.com/paradigmxyz/reth.git", version
 reth_ethereum_primitives = { git = "https://github.com/paradigmxyz/reth.git", version = "1.5.0" }
 
 
-# Test dependencies
+# Consensus dependencies
 reth-consensus = { git = "https://github.com/paradigmxyz/reth.git", version = "1.5.0", default-features = false }
+reth-consensus-common = { git = "https://github.com/paradigmxyz/reth.git", version = "1.5.0", default-features = false }
+reth-ethereum-consensus = { git = "https://github.com/paradigmxyz/reth.git", version = "1.5.0", default-features = false }
+
+# Test dependencies
 reth-testing-utils = { git = "https://github.com/paradigmxyz/reth.git", version = "1.5.0", default-features = false }
 reth-db = { git = "https://github.com/paradigmxyz/reth.git", version = "1.5.0", default-features = false }
 reth-tasks = { git = "https://github.com/paradigmxyz/reth.git", version = "1.5.0", default-features = false }
