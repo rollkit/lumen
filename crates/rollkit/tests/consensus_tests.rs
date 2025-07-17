@@ -29,7 +29,7 @@ fn test_rollkit_consensus_allows_same_timestamp() {
     // Create child block with SAME timestamp (this should be allowed)
     let child_header = reth_primitives::Header {
         number: 2,
-        parent_hash: [99u8; 32].into(),
+        parent_hash: parent.hash(),
         timestamp: 1000,
         gas_limit: 30_000_000,
         gas_used: 0,
