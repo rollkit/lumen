@@ -23,6 +23,10 @@ build:
 build-dev:
 	$(CARGO) build --bin $(BINARY_NAME)
 
+## build-maxperf: Build lumen with the most aggressive optimizations
+build-maxperf:
+	RUSTFLAGS="-C target-cpu=native" $(CARGO) build --profile maxperf --features jemalloc,asm-keccak --bin $(BINARY_NAME)
+
 ##@ Testing
 
 ## test: Run all tests
