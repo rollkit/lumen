@@ -17,6 +17,7 @@ use alloy_rpc_types::engine::{
 use clap::Parser;
 use lumen_rollkit::{
     config::RollkitConfig,
+    consensus::RollkitConsensusBuilder,
     rpc::txpool::{RollkitTxpoolApiImpl, RollkitTxpoolApiServer},
 };
 use reth_ethereum::{
@@ -28,10 +29,7 @@ use reth_ethereum::{
             rpc::RpcAddOns,
             Node, NodeAdapter, NodeComponentsBuilder,
         },
-        node::{
-            EthereumConsensusBuilder, EthereumExecutorBuilder, EthereumNetworkBuilder,
-            EthereumPoolBuilder,
-        },
+        node::{EthereumExecutorBuilder, EthereumNetworkBuilder, EthereumPoolBuilder},
         EthereumEthApiBuilder,
     },
     primitives::SealedBlock,
@@ -127,7 +125,7 @@ where
         BasicPayloadServiceBuilder<RollkitPayloadBuilderBuilder>,
         EthereumNetworkBuilder,
         EthereumExecutorBuilder,
-        EthereumConsensusBuilder,
+        RollkitConsensusBuilder,
     >;
     type AddOns = RollkitNodeAddOns<
         NodeAdapter<N, <Self::ComponentsBuilder as NodeComponentsBuilder<N>>::Components>,
@@ -142,7 +140,7 @@ where
                 RollkitPayloadBuilderBuilder::new(&self.args),
             ))
             .network(EthereumNetworkBuilder::default())
-            .consensus(EthereumConsensusBuilder::default())
+            .consensus(RollkitConsensusBuilder::default())
     }
 
     fn add_ons(&self) -> Self::AddOns {

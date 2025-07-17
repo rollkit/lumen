@@ -15,6 +15,14 @@ reth-primitives.workspace = true
 reth-primitives-traits.workspace = true
 reth-engine-primitives.workspace = true
 reth-transaction-pool.workspace = true
+reth-consensus.workspace = true
+reth-consensus-common.workspace = true
+reth-ethereum-consensus.workspace = true
+reth-chainspec.workspace = true
+reth-node-api.workspace = true
+reth-ethereum = { workspace = true, features = ["node-api", "node"] }
+reth-ethereum-primitives.workspace = true
+reth-execution-types.workspace = true
 
 # Alloy dependencies
 alloy-rpc-types-engine.workspace = true
@@ -31,6 +39,7 @@ async-trait.workspace = true
 jsonrpsee = { workspace = true, features = ["server", "macros"] }
 jsonrpsee-core.workspace = true
 jsonrpsee-proc-macros.workspace = true
+eyre.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

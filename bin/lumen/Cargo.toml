@@ -23,6 +23,7 @@ reth-cli-util.workspace = true
 reth-ethereum-cli.workspace = true
 reth-ethereum = { workspace = true, features = ["node", "cli", "pool"] }
 reth-node-builder.workspace = true
+reth-node-api.workspace = true
 reth-chainspec.workspace = true
 reth-primitives-traits.workspace = true
 reth-engine-local.workspace = true
@@ -32,6 +33,8 @@ reth-payload-builder.workspace = true
 reth-revm.workspace = true
 reth-provider.workspace = true
 reth-trie-db.workspace = true
+reth-consensus.workspace = true
+reth-ethereum-primitives.workspace = true
 
 # Alloy dependencies
 alloy-network.workspace = true
