@@ -9,6 +9,7 @@ This project provides a modified version of Reth that includes:
 - **Custom Payload Builder**: A specialized payload builder that accepts transactions through Engine API payload attributes
 - **Rollkit-Compatible Engine API**: Modified Engine API validation to work with Rollkit's block production model
 - **Transaction Support**: Full support for including transactions in blocks via the Engine API `engine_forkchoiceUpdatedV3` method
+- **Custom Consensus**: Modified consensus layer that allows multiple blocks to have the same timestamp
 - **Txpool RPC Extension**: Custom `txpoolExt_getTxs` RPC method for efficient transaction retrieval with configurable size limits
 
 ## Key Features
@@ -33,7 +34,16 @@ Modified Engine API validator that:
 - Supports custom gas limits per payload
 - Maintains compatibility with standard Ethereum validation where possible
 
-### 4. Txpool RPC Extension
+### 4. Custom Consensus for Equal Timestamps
+
+Lumen includes a custom consensus implementation (`RollkitConsensus`) that:
+
+- Allows multiple blocks to have the same timestamp
+- Wraps the standard Ethereum beacon consensus for most validation
+- Only modifies timestamp validation to accept `header.timestamp >= parent.timestamp` instead of requiring strictly greater timestamps
+- Essential for Rollkit's operation where multiple blocks may be produced with the same timestamp
+
+### 5. Txpool RPC Extension
 
 Custom RPC namespace `txpoolExt` that provides:
 
@@ -170,11 +180,16 @@ This modular design allows for:
    - Modified validator for Rollkit-specific requirements
    - Bypasses certain validations while maintaining security
 
-4. **Rollkit Types** (`crates/rollkit/src/types.rs`)
+4. **RollkitConsensus** (`crates/rollkit/src/consensus.rs`)
+   - Custom consensus implementation for Rollkit
+   - Allows blocks with equal timestamps (parent.timestamp <= header.timestamp)
+   - Wraps standard Ethereum beacon consensus for other validations
+
+5. **Rollkit Types** (`crates/rollkit/src/types.rs`)
    - Rollkit-specific payload attributes and types
    - Transaction encoding/decoding utilities
 
-5. **Rollkit Txpool RPC** (`crates/rollkit/src/rpc/txpool.rs`)
+6. **Rollkit Txpool RPC** (`crates/rollkit/src/rpc/txpool.rs`)
    - Custom RPC implementation for transaction pool queries
    - Efficient transaction retrieval with size-based limits
    - Returns RLP-encoded transaction bytes for Rollkit consumption
@@ -238,6 +253,7 @@ lumen/
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       ├── config.rs      # Rollkit configuration
+│   │       ├── consensus.rs   # Custom consensus implementation
 │   │       ├── types.rs       # Rollkit payload attributes
 │   │       └── rpc/
 │   │           ├── mod.rs
