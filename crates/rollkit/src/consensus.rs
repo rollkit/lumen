@@ -70,48 +70,19 @@ impl HeaderValidator for RollkitConsensus {
         header: &SealedHeader,
         parent: &SealedHeader,
     ) -> Result<(), ConsensusError> {
-        // Custom validation that allows same timestamps
-        // This is the key difference from standard Ethereum consensus
-
-        // First validate parent hash and number
-        if header.parent_hash != parent.hash() {
-            return Err(ConsensusError::ParentHashMismatch(GotExpectedBoxed(
-                Box::new(GotExpected {
-                    got: header.parent_hash,
-                    expected: parent.hash(),
-                }),
-            )));
-        }
-
-        if header.number != parent.number + 1 {
-            return Err(ConsensusError::ParentBlockNumberMismatch {
-                parent_block_number: parent.number,
-                block_number: header.number,
-            });
-        }
-
-        // ROLLKIT MODIFICATION: Allow same timestamp
-        // Standard Ethereum requires: header.timestamp > parent.timestamp
-        // Rollkit allows: header.timestamp >= parent.timestamp
-        if header.timestamp < parent.timestamp {
-            return Err(ConsensusError::TimestampIsInPast {
-                parent_timestamp: parent.timestamp,
-                timestamp: header.timestamp,
-            });
-        }
-        // NOTE: We explicitly do NOT check for header.timestamp == parent.timestamp
-        // as an error, which is the main change for Rollkit
-
-        // For all other validations, delegate to the inner consensus
-        // but skip it when timestamps are equal since the inner consensus
-        // would reject this case
-        if header.timestamp == parent.timestamp {
-            // Timestamps are equal, which we explicitly allow for Rollkit
-            // Skip the inner consensus validation that would reject this
-            Ok(())
-        } else {
-            // Timestamps are different, so we can safely delegate to inner consensus
-            self.inner.validate_header_against_parent(header, parent)
+        match self.inner.validate_header_against_parent(header, parent) {
+            Ok(()) => Ok(()),
+            Err(ConsensusError::TimestampIsInPast { .. }) => {
+                if header.timestamp == parent.timestamp {
+                    Ok(())
+                } else {
+                    Err(ConsensusError::TimestampIsInPast {
+                        parent_timestamp: parent.timestamp,
+                        timestamp: header.timestamp,
+                    })
+                }
+            }
+            Err(e) => Err(e),
         }
     }
 }
