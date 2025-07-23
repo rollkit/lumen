@@ -4,7 +4,6 @@ use alloy_rpc_types::{
     engine::{PayloadAttributes as EthPayloadAttributes, PayloadId},
     Withdrawal,
 };
-use reth_engine_local::payload::UnsupportedLocalAttributes;
 use reth_ethereum::{
     node::api::payload::{PayloadAttributes, PayloadBuilderAttributes},
     TransactionSigned,
@@ -26,8 +25,6 @@ pub struct RollkitEnginePayloadAttributes {
     #[serde(rename = "gasLimit")]
     pub gas_limit: Option<u64>,
 }
-
-impl UnsupportedLocalAttributes for RollkitEnginePayloadAttributes {}
 
 impl PayloadAttributes for RollkitEnginePayloadAttributes {
     fn timestamp(&self) -> u64 {
