@@ -30,6 +30,7 @@ reth-engine-local.workspace = true
 reth-basic-payload-builder.workspace = true
 reth-ethereum-payload-builder.workspace = true
 reth-payload-builder.workspace = true
+reth-payload-primitives.workspace = true
 reth-revm.workspace = true
 reth-provider.workspace = true
 reth-trie-db.workspace = true
