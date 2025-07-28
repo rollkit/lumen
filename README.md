@@ -1,4 +1,4 @@
-# Lumen - Rollkit Integration for Reth
+# EV-reth - Evolve Integration for Reth
 
 Lumen is a specialized integration layer that enables [Reth](https://github.com/paradigmxyz/reth) to work seamlessly with [Rollkit](https://rollkit.dev/), providing a custom payload builder that supports transaction submission via the Engine API.
 
@@ -62,7 +62,7 @@ Custom RPC namespace `txpoolExt` that provides:
 
 ```bash
 # Clone the repository
-git clone https://github.com/rollkit/lumen.git
+git clone https://github.com/evstack/lumen.git
 cd lumen
 
 # Build the project

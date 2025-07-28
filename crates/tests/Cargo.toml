@@ -1,19 +1,19 @@
 [package]
-name = "lumen-tests"
+name = "ev-tests"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-description = "Test suite for Lumen rollkit integration"
+description = "Test suite for Evolve ev-reth integration"
 publish = false
 
 [dependencies]
-# Lumen dependencies
-lumen-rollkit = { path = "../rollkit" }
-lumen-node = { path = "../node" }
-lumen-common = { path = "../common" }
+# Evolve dependencies
+evolve-ev-reth = { path = "../evolve" }
+ev-node = { path = "../node" }
+ev-common = { path = "../common" }
 
 # Reth dependencies
 reth-testing-utils.workspace = true

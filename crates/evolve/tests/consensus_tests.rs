@@ -1,6 +1,6 @@
 //! Tests for Rollkit consensus implementation
 
-use lumen_rollkit::consensus::RollkitConsensus;
+use evolve_ev_reth::consensus::RollkitConsensus;
 use reth_chainspec::MAINNET;
 use reth_consensus::{ConsensusError, HeaderValidator};
 use reth_primitives::{Header, SealedHeader};

@@ -1,17 +1,17 @@
 [package]
-name = "lumen-node"
+name = "ev-node"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-description = "Lumen node implementation"
+description = "Evolve node implementation"
 
 [dependencies]
-# Lumen dependencies
-lumen-common = { path = "../common" }
-lumen-rollkit = { path = "../rollkit" }
+# Evolve dependencies
+ev-common = { path = "../common" }
+evolve-ev-reth = { path = "../evolve" }
 
 # Reth dependencies
 reth-node-builder.workspace = true

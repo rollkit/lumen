@@ -1,22 +1,22 @@
 [package]
-name = "lumen"
+name = "ev-reth"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-description = "Lumen node binary"
+description = "Ev-reth node binary"
 
 [[bin]]
-name = "lumen"
+name = "ev-reth"
 path = "src/main.rs"
 
 [dependencies]
-# Core lumen crates
-lumen-node = { path = "../../crates/node" }
-lumen-common = { path = "../../crates/common" }
-lumen-rollkit = { path = "../../crates/rollkit" }
+# Core evolve crates
+ev-node = { path = "../../crates/node" }
+ev-common = { path = "../../crates/common" }
+evolve-ev-reth = { path = "../../crates/evolve" }
 
 # Reth CLI and core dependencies
 reth-cli-util.workspace = true

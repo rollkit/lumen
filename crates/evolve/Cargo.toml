@@ -1,12 +1,12 @@
 [package]
-name = "lumen-rollkit"
+name = "evolve-ev-reth"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-description = "Rollkit-specific types and integration for Lumen"
+description = "Evolve-specific types and integration for ev-reth"
 
 [dependencies]
 # Reth dependencies

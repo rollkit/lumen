@@ -24,7 +24,7 @@ COPY --from=planner /app/recipe.json recipe.json
 
 # Copy workspace Cargo files for better caching
 COPY Cargo.toml Cargo.lock ./
-COPY bin/lumen/Cargo.toml bin/lumen/
+COPY bin/ev-reth/Cargo.toml bin/ev-reth/
 COPY crates/common/Cargo.toml crates/common/
 COPY crates/node/Cargo.toml crates/node/
 COPY crates/rollkit/Cargo.toml crates/rollkit/
@@ -40,17 +40,17 @@ ENV CARGO_BUILD_JOBS=2
 ENV CARGO_INCREMENTAL=0
 
 # Cook dependencies first (better layer caching)
-RUN cargo chef cook --profile $BUILD_PROFILE --recipe-path recipe.json --manifest-path bin/lumen/Cargo.toml
+RUN cargo chef cook --profile $BUILD_PROFILE --recipe-path recipe.json --manifest-path bin/ev-reth/Cargo.toml
 
 # Copy all source code
 COPY . .
 
 # Build the binary with memory-efficient settings
-RUN cargo build --profile $BUILD_PROFILE --bin lumen --manifest-path bin/lumen/Cargo.toml -j 2
+RUN cargo build --profile $BUILD_PROFILE --bin ev-reth --manifest-path bin/ev-reth/Cargo.toml -j 2
 
 # Copy binary from correct location
-RUN ls -la /app/target/$BUILD_PROFILE/lumen
-RUN cp /app/target/$BUILD_PROFILE/lumen /lumen
+RUN ls -la /app/target/$BUILD_PROFILE/ev-reth
+RUN cp /app/target/$BUILD_PROFILE/ev-reth /ev-reth
 
 FROM ubuntu:22.04 AS runtime
 
@@ -59,8 +59,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=builder /lumen /usr/local/bin/
-RUN chmod +x /usr/local/bin/lumen
+COPY --from=builder /ev-reth /usr/local/bin/
+RUN chmod +x /usr/local/bin/ev-reth
 COPY LICENSE-* ./
 
 # Expose ports: P2P, Discovery, Metrics, JSON-RPC, WebSocket, GraphQL, Engine API
@@ -68,6 +68,6 @@ EXPOSE 30303 30303/udp 9001 8545 8546 7545 8551
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD /usr/local/bin/lumen --version || exit 1
+    CMD /usr/local/bin/ev-reth --version || exit 1
 
-ENTRYPOINT ["/usr/local/bin/lumen"]
+ENTRYPOINT ["/usr/local/bin/ev-reth"]
