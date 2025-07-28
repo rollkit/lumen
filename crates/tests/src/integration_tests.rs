@@ -7,7 +7,7 @@ use std::process::{Command, Stdio};
 
 /// Tests that the ev-reth binary compiles successfully
 #[test]
-fn test_ev-reth_binary_compiles() {
+fn test_ev_reth_binary_compiles() {
     let output = Command::new("cargo")
         .args(["build", "-p", "ev-reth", "--bin", "ev-reth"])
         .output()
