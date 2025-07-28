@@ -11,10 +11,10 @@ on:
       - v*
 
 env:
-  REPO_NAME: ${{ github.repository_owner }}/lumen
-  IMAGE_NAME: ${{ github.repository_owner }}/lumen
+  REPO_NAME: ${{ github.repository_owner }}/ev-reth
+  IMAGE_NAME: ${{ github.repository_owner }}/ev-reth
   CARGO_TERM_COLOR: always
-  DOCKER_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/lumen
+  DOCKER_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/ev-reth
   DOCKER_USERNAME: ${{ github.actor }}
 
 jobs:

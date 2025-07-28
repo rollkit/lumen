@@ -47,23 +47,23 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf lumen-${{ matrix.target }}.tar.gz lumen
-          mv lumen-${{ matrix.target }}.tar.gz ../../../
+          tar czf ev-reth-${{ matrix.target }}.tar.gz ev-reth
+          mv ev-reth-${{ matrix.target }}.tar.gz ../../../
 
       - name: Create zip
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           cd target/${{ matrix.target }}/release
-          Compress-Archive -Path lumen.exe -DestinationPath ../../../lumen-${{ matrix.target }}.zip
+          Compress-Archive -Path ev-reth.exe -DestinationPath ../../../ev-reth-${{ matrix.target }}.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lumen-${{ matrix.target }}
+          name: ev-reth-${{ matrix.target }}
           path: |
-            lumen-*.tar.gz
-            lumen-*.zip
+            ev-reth-*.tar.gz
+            ev-reth-*.zip
 
   create-release:
     name: create-release
@@ -78,7 +78,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-          pattern: lumen-*
+          pattern: ev-reth-*
           merge-multiple: true
 
       - name: Create GitHub Release
@@ -88,5 +88,5 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            artifacts/lumen-*.tar.gz
-            artifacts/lumen-*.zip
+            artifacts/ev-reth-*.tar.gz
+            artifacts/ev-reth-*.zip

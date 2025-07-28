@@ -1,7 +1,7 @@
-//! Constants used across the Lumen project
+//! Constants used across the ev-reth project
 
-/// Default chain ID for Lumen
-pub const DEFAULT_CHAIN_ID: u64 = 1;
+/// Default chain ID for ev-reth
+pub const DEFAULT_CHAIN_ID: u64 = 4337;
 
 /// Default RPC port
 pub const DEFAULT_RPC_PORT: u16 = 8545;

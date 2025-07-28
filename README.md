@@ -16,7 +16,7 @@ This project provides a modified version of Reth that includes:
 
 ### 1. Engine API Transaction Support
 
-Unlike standard Reth, Lumen accepts transactions directly through the Engine API payload attributes. This allows Evolve to submit transactions when requesting new payload creation.
+Unlike standard Reth, ev-reth accepts transactions directly through the Engine API payload attributes. This allows Evolve to submit transactions when requesting new payload creation.
 
 ### 2. Custom Payload Builder
 
@@ -36,7 +36,7 @@ Modified Engine API validator that:
 
 ### 4. Custom Consensus for Equal Timestamps
 
-Lumen includes a custom consensus implementation (`RollkitConsensus`) that:
+ev-reth includes a custom consensus implementation (`RollkitConsensus`) that:
 
 - Allows multiple blocks to have the same timestamp
 - Wraps the standard Ethereum beacon consensus for most validation
@@ -74,18 +74,18 @@ make test
 
 ## Usage
 
-### Running the Lumen Node
+### Running the ev-reth Node
 
 Basic usage:
 
 ```bash
-./target/release/lumen node
+./target/release/ev-reth node
 ```
 
 With custom configuration:
 
 ```bash
-./target/release/lumen node \
+./target/release/ev-reth node \
     --chain <CHAIN_SPEC> \
     --datadir <DATA_DIR> \
     --http \
@@ -151,7 +151,7 @@ curl -X POST http://localhost:8545 \
 
 ### Modular Design
 
-Lumen follows a modular architecture similar to Odyssey, with clear separation of concerns:
+Ev-reth follows a modular architecture similar to Odyssey, with clear separation of concerns:
 
 - **`bin/ev-reth`**: The main executable binary
 - **`crates/common`**: Shared utilities and constants used across all crates
@@ -172,11 +172,11 @@ This modular design allows for:
    - Handles payload construction with transactions from Engine API
    - Manages state execution and block assembly
 
-2. **RollkitEngineTypes** (`bin/lumen/src/main.rs`)
+2. **RollkitEngineTypes** (`bin/ev-reth/src/main.rs`)
    - Custom Engine API types supporting transaction attributes
    - Payload validation and attribute processing
 
-3. **RollkitEngineValidator** (`bin/lumen/src/main.rs`)
+3. **RollkitEngineValidator** (`bin/ev-reth/src/main.rs`)
    - Modified validator for Rollkit-specific requirements
    - Bypasses certain validations while maintaining security
 
@@ -230,9 +230,9 @@ All standard Reth configuration options are supported. Key options for Rollkit i
 ### Project Structure
 
 ```
-lumen/
+ev-reth/
 ├── bin/
-│   └── lumen/                  # Main binary
+│   └── ev-reth/                  # Main binary
 │       ├── Cargo.toml
 │       └── src/
 │           └── main.rs         # Binary with Engine API integration
@@ -264,7 +264,7 @@ lumen/
 │           ├── lib.rs
 │           └── *.rs            # Test files
 ├── etc/                        # Configuration files
-│   └── lumen-genesis.json      # Genesis configuration
+│   └── ev-reth-genesis.json      # Genesis configuration
 ├── Cargo.toml                  # Workspace configuration
 ├── Makefile                    # Build automation
 └── README.md                   # This file
@@ -314,7 +314,7 @@ make run-dev
 Enable detailed logging:
 
 ```bash
-RUST_LOG=debug,lumen=trace ./target/release/lumen node
+RUST_LOG=debug,ev-reth=trace ./target/release/ev-reth node
 ```
 
 ## Contributing

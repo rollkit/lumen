@@ -43,7 +43,7 @@ test-unit:
 
 ## test-integration: Run integration tests only
 test-integration:
-	$(CARGO) test -p lumen-tests
+	$(CARGO) test -p ev-tests
 
 ##@ Development
 
@@ -118,7 +118,7 @@ test-common:
 # Docker configuration
 GIT_TAG ?= $(shell git describe --tags --abbrev=0 || echo "latest")
 BIN_DIR = dist/bin
-DOCKER_IMAGE_NAME ?= ghcr.io/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/' | cut -d'/' -f1)/lumen
+DOCKER_IMAGE_NAME ?= ghcr.io/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/' | cut -d'/' -f1)/ev-reth
 PROFILE ?= release
 
 # List of features to use when building

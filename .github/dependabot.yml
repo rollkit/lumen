@@ -8,7 +8,7 @@ updates:
       day: "monday"
     open-pull-requests-limit: 10
     reviewers:
-      - "lumen-maintainers"
+      - "ev-maintainers"
     labels:
       - "dependencies"
       - "rust"
@@ -24,7 +24,7 @@ updates:
       day: "monday"
     open-pull-requests-limit: 5
     reviewers:
-      - "lumen-devops-team"
+      - "ev-devops-team"
     labels:
       - "dependencies"
       - "github-actions"

@@ -1,6 +1,6 @@
-//! Lumen node implementation
+//! ev-reth node implementation
 //!
-//! This crate provides the core node functionality for Lumen, including:
+//! This crate provides the core node functionality for ev-reth, including:
 //! - Payload builder implementation
 //! - Node configuration
 //! - RPC interfaces
