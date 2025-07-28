@@ -27,7 +27,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY bin/ev-reth/Cargo.toml bin/ev-reth/
 COPY crates/common/Cargo.toml crates/common/
 COPY crates/node/Cargo.toml crates/node/
-COPY crates/rollkit/Cargo.toml crates/rollkit/
+COPY crates/evolve/Cargo.toml crates/evolve/
 COPY crates/tests/Cargo.toml crates/tests/
 
 ARG BUILD_PROFILE=docker

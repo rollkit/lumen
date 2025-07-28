@@ -107,7 +107,7 @@ test-node:
 
 ## test-rollkit: Test only the rollkit crate
 test-rollkit:
-	$(CARGO) test -p evolve
+	$(CARGO) test -p evolve-ev-reth
 
 ## test-common: Test only the common crate
 test-common:
