@@ -1,7 +1,7 @@
 //! Constants used across the ev-reth project
 
 /// Default chain ID for ev-reth
-pub const DEFAULT_CHAIN_ID: u64 = 4337;
+pub const DEFAULT_CHAIN_ID: u64 = 3788;
 
 /// Default RPC port
 pub const DEFAULT_RPC_PORT: u16 = 8545;
