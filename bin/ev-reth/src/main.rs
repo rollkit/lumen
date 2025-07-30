@@ -160,10 +160,7 @@ fn main() {
 
     if let Err(err) = Cli::<EthereumChainSpecParser, RollkitArgs>::parse().run(
         async move |builder, rollkit_args| {
-            info!(
-                "=== EV-RETH: Starting with args: {:?} ===",
-                rollkit_args
-            );
+            info!("=== EV-RETH: Starting with args: {:?} ===", rollkit_args);
             info!("=== EV-RETH: EV-node mode enabled ===");
             info!("=== EV-RETH: Using custom payload builder with transaction support ===");
 
