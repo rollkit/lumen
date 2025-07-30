@@ -30,9 +30,9 @@ use crate::{attributes::RollkitEnginePayloadBuilderAttributes, RollkitEngineType
 pub struct RollkitArgs {
     /// Enable Rollkit mode for the node (enabled by default)
     #[arg(
-        long = "rollkit.enable",
+        long = "ev-reth.enable",
         default_value = "true",
-        help = "Enable Rollkit integration for transaction processing via Engine API"
+        help = "Enable Evolve integration for transaction processing via Engine API"
     )]
     pub enable_rollkit: bool,
 }
