@@ -66,7 +66,7 @@ impl PayloadValidator for RollkitEngineValidator {
 
                 // Check if this is a block hash mismatch error - bypass it for rollkit
                 if matches!(err, alloy_rpc_types::engine::PayloadError::BlockHash { .. }) {
-                    info!("Rollkit engine validator: bypassing block hash mismatch for rollkit");
+                    info!("Rollkit engine validator: bypassing block hash mismatch for ev-reth");
                     // For rollkit, we trust the payload builder - just parse the block without hash validation
                     use reth_primitives_traits::Block;
                     let ExecutionData { payload, sidecar } = payload;

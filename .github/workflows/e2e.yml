@@ -29,16 +29,16 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-      - name: Build Lumen
+      - name: Build ev-reth
         run: |
-          cargo build --profile release --locked --bin lumen
+          cargo build --profile release --locked --bin ev-reth
 
       - name: Run E2E tests
         run: |
           cargo nextest run \
             --locked \
             --workspace \
-            -E "package(lumen-tests)" \
+            -E "package(ev-tests)" \
             --no-capture
         env:
           RUST_LOG: debug

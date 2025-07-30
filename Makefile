@@ -2,7 +2,7 @@
 
 # Build configuration
 CARGO = cargo
-BINARY_NAME = lumen
+BINARY_NAME = ev-reth
 TARGET_DIR = target
 
 # Default target
@@ -15,15 +15,15 @@ help:
 
 ##@ Building
 
-## build: Build the lumen binary in release mode
+## build: Build the ev-reth binary in release mode
 build:
 	$(CARGO) build --release --bin $(BINARY_NAME)
 
-## build-dev: Build the lumen binary in debug mode
+## build-dev: Build the ev-reth binary in debug mode
 build-dev:
 	$(CARGO) build --bin $(BINARY_NAME)
 
-## build-maxperf: Build lumen with the most aggressive optimizations
+## build-maxperf: Build ev-reth with the most aggressive optimizations
 build-maxperf:
 	RUSTFLAGS="-C target-cpu=native" $(CARGO) build --profile maxperf --features jemalloc,asm-keccak --bin $(BINARY_NAME)
 
@@ -43,11 +43,11 @@ test-unit:
 
 ## test-integration: Run integration tests only
 test-integration:
-	$(CARGO) test -p lumen-tests
+	$(CARGO) test -p ev-tests
 
 ##@ Development
 
-## run: Run the lumen node with default settings
+## run: Run the ev-reth node with default settings
 run: build-dev
 	./$(TARGET_DIR)/debug/$(BINARY_NAME) node
 
@@ -103,22 +103,22 @@ build-all:
 
 ## test-node: Test only the node crate
 test-node:
-	$(CARGO) test -p lumen-node
+	$(CARGO) test -p ev-node
 
 ## test-rollkit: Test only the rollkit crate
 test-rollkit:
-	$(CARGO) test -p lumen-rollkit
+	$(CARGO) test -p evolve-ev-reth
 
 ## test-common: Test only the common crate
 test-common:
-	$(CARGO) test -p lumen-common
+	$(CARGO) test -p ev-common
 
 ##@ Docker
 
 # Docker configuration
 GIT_TAG ?= $(shell git describe --tags --abbrev=0 || echo "latest")
 BIN_DIR = dist/bin
-DOCKER_IMAGE_NAME ?= ghcr.io/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/' | cut -d'/' -f1)/lumen
+DOCKER_IMAGE_NAME ?= ghcr.io/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/' | cut -d'/' -f1)/ev-reth
 PROFILE ?= release
 
 # List of features to use when building

@@ -1,13 +1,13 @@
-# Lumen - Rollkit Integration for Reth
+# EV-reth - Evolve Integration for Reth
 
-Lumen is a specialized integration layer that enables [Reth](https://github.com/paradigmxyz/reth) to work seamlessly with [Rollkit](https://rollkit.dev/), providing a custom payload builder that supports transaction submission via the Engine API.
+EV-reth is a specialized integration layer that enables [Reth](https://github.com/paradigmxyz/reth) to work seamlessly with Evolve, providing a custom payload builder that supports transaction submission via the Engine API.
 
 ## Overview
 
 This project provides a modified version of Reth that includes:
 
 - **Custom Payload Builder**: A specialized payload builder that accepts transactions through Engine API payload attributes
-- **Rollkit-Compatible Engine API**: Modified Engine API validation to work with Rollkit's block production model
+- **Evolve-Compatible Engine API**: Modified Engine API validation to work with Evolve's block production model
 - **Transaction Support**: Full support for including transactions in blocks via the Engine API `engine_forkchoiceUpdatedV3` method
 - **Custom Consensus**: Modified consensus layer that allows multiple blocks to have the same timestamp
 - **Txpool RPC Extension**: Custom `txpoolExt_getTxs` RPC method for efficient transaction retrieval with configurable size limits
@@ -16,7 +16,7 @@ This project provides a modified version of Reth that includes:
 
 ### 1. Engine API Transaction Support
 
-Unlike standard Reth, Lumen accepts transactions directly through the Engine API payload attributes. This allows Rollkit to submit transactions when requesting new payload creation.
+Unlike standard Reth, ev-reth accepts transactions directly through the Engine API payload attributes. This allows Evolve to submit transactions when requesting new payload creation.
 
 ### 2. Custom Payload Builder
 
@@ -30,18 +30,18 @@ The `RollkitPayloadBuilder` handles:
 
 Modified Engine API validator that:
 
-- Bypasses block hash validation for Rollkit blocks
+- Bypasses block hash validation for Evolve blocks
 - Supports custom gas limits per payload
 - Maintains compatibility with standard Ethereum validation where possible
 
 ### 4. Custom Consensus for Equal Timestamps
 
-Lumen includes a custom consensus implementation (`RollkitConsensus`) that:
+ev-reth includes a custom consensus implementation (`RollkitConsensus`) that:
 
 - Allows multiple blocks to have the same timestamp
 - Wraps the standard Ethereum beacon consensus for most validation
 - Only modifies timestamp validation to accept `header.timestamp >= parent.timestamp` instead of requiring strictly greater timestamps
-- Essential for Rollkit's operation where multiple blocks may be produced with the same timestamp
+- Essential for Evolve's operation where multiple blocks may be produced with the same timestamp
 
 ### 5. Txpool RPC Extension
 
@@ -62,8 +62,8 @@ Custom RPC namespace `txpoolExt` that provides:
 
 ```bash
 # Clone the repository
-git clone https://github.com/rollkit/lumen.git
-cd lumen
+git clone https://github.com/evstack/ev-reth.git
+cd ev-reth
 
 # Build the project
 make build
@@ -74,18 +74,18 @@ make test
 
 ## Usage
 
-### Running the Lumen Node
+### Running the ev-reth Node
 
 Basic usage:
 
 ```bash
-./target/release/lumen node
+./target/release/ev-reth node
 ```
 
 With custom configuration:
 
 ```bash
-./target/release/lumen node \
+./target/release/ev-reth node \
     --chain <CHAIN_SPEC> \
     --datadir <DATA_DIR> \
     --http \
@@ -151,19 +151,19 @@ curl -X POST http://localhost:8545 \
 
 ### Modular Design
 
-Lumen follows a modular architecture similar to Odyssey, with clear separation of concerns:
+Ev-reth follows a modular architecture similar to Odyssey, with clear separation of concerns:
 
-- **`bin/lumen`**: The main executable binary
+- **`bin/ev-reth`**: The main executable binary
 - **`crates/common`**: Shared utilities and constants used across all crates
 - **`crates/node`**: Core node implementation including the payload builder
-- **`crates/rollkit`**: Rollkit-specific types, RPC extensions, and integration logic
+- **`crates/evolve`**: Evolve-specific types, RPC extensions, and integration logic
 - **`crates/tests`**: Comprehensive test suite including unit and integration tests
 
 This modular design allows for:
 
 - Better code organization and maintainability
 - Easier testing of individual components
-- Clear separation between Rollkit-specific and general node logic
+- Clear separation between Evolve-specific and general node logic
 - Reusable components for other projects
 
 ### Components
@@ -172,11 +172,11 @@ This modular design allows for:
    - Handles payload construction with transactions from Engine API
    - Manages state execution and block assembly
 
-2. **RollkitEngineTypes** (`bin/lumen/src/main.rs`)
+2. **RollkitEngineTypes** (`bin/ev-reth/src/main.rs`)
    - Custom Engine API types supporting transaction attributes
    - Payload validation and attribute processing
 
-3. **RollkitEngineValidator** (`bin/lumen/src/main.rs`)
+3. **RollkitEngineValidator** (`bin/ev-reth/src/main.rs`)
    - Modified validator for Rollkit-specific requirements
    - Bypasses certain validations while maintaining security
 
@@ -196,7 +196,7 @@ This modular design allows for:
 
 ### Transaction Flow
 
-1. Rollkit submits transactions via Engine API payload attributes
+1. Evolve submits transactions via Engine API payload attributes
 2. `RollkitEnginePayloadAttributes` decodes and validates transactions
 3. `RollkitPayloadBuilder` executes transactions and builds block
 4. Block is returned via standard Engine API response
@@ -230,9 +230,9 @@ All standard Reth configuration options are supported. Key options for Rollkit i
 ### Project Structure
 
 ```
-lumen/
+ev-reth/
 ├── bin/
-│   └── lumen/                  # Main binary
+│   └── ev-reth/                  # Main binary
 │       ├── Cargo.toml
 │       └── src/
 │           └── main.rs         # Binary with Engine API integration
@@ -248,13 +248,13 @@ lumen/
 │   │       ├── lib.rs
 │   │       ├── builder.rs     # Payload builder implementation
 │   │       └── config.rs      # Configuration types
-│   ├── rollkit/                # Rollkit-specific types
+│   ├── evolve/                # Evolve-specific types
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
-│   │       ├── config.rs      # Rollkit configuration
+│   │       ├── config.rs      # Evolve configuration
 │   │       ├── consensus.rs   # Custom consensus implementation
-│   │       ├── types.rs       # Rollkit payload attributes
+│   │       ├── types.rs       # Evolve payload attributes
 │   │       └── rpc/
 │   │           ├── mod.rs
 │   │           └── txpool.rs  # Txpool RPC implementation
@@ -264,7 +264,7 @@ lumen/
 │           ├── lib.rs
 │           └── *.rs            # Test files
 ├── etc/                        # Configuration files
-│   └── lumen-genesis.json      # Genesis configuration
+│   └── ev-reth-genesis.json      # Genesis configuration
 ├── Cargo.toml                  # Workspace configuration
 ├── Makefile                    # Build automation
 └── README.md                   # This file
@@ -314,7 +314,7 @@ make run-dev
 Enable detailed logging:
 
 ```bash
-RUST_LOG=debug,lumen=trace ./target/release/lumen node
+RUST_LOG=debug,ev-reth=trace ./target/release/ev-reth node
 ```
 
 ## Contributing

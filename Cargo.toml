@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-  "bin/lumen",
+  "bin/ev-reth",
   "crates/common",
   "crates/node",
-  "crates/rollkit",
+  "crates/evolve",
   "crates/tests",
 ]
 
@@ -13,9 +13,9 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.82"
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/rollkit/lumen"
-repository = "https://github.com/rollkit/lumen"
-authors = ["Rollkit Contributors"]
+homepage = "https://github.com/evstack/ev-reth"
+repository = "https://github.com/evstack/ev-reth"
+authors = ["Evolve Stack Contributors"]
 
 [workspace.dependencies]
 # Reth dependencies - Using the latest stable versions

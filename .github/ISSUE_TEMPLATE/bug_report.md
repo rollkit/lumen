@@ -13,6 +13,7 @@ A clear and concise description of what the bug is.
 ## To Reproduce
 
 Steps to reproduce the behavior:
+
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
@@ -29,7 +30,7 @@ If applicable, add screenshots to help explain your problem.
 ## System information
 
 - OS: [e.g. Ubuntu 22.04]
-- Lumen version: [e.g. v0.1.0]
+- ev-reth version: [e.g. v0.1.0]
 - Rust version: [e.g. 1.81.0]
 
 ## Logs

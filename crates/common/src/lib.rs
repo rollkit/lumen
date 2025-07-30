@@ -1,4 +1,4 @@
-//! Common utilities and constants for Lumen
+//! Common utilities and constants for ev-reth
 
 pub mod constants;
 

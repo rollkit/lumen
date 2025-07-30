@@ -1,6 +1,6 @@
-//! Integration tests for Lumen rollkit
+//! Integration tests for ev-reth rollkit
 //!
-//! This crate contains integration tests for the Lumen rollkit implementation,
+//! This crate contains integration tests for the ev-reth rollkit implementation,
 //! including payload builder tests, engine API tests, and common test utilities.
 
 pub mod common;

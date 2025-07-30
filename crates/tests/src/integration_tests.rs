@@ -1,15 +1,15 @@
-//! Integration tests for the Lumen binary and CLI functionality.
+//! Integration tests for the ev-reth binary and CLI functionality.
 //!
-//! This test suite focuses on testing the lumen binary compilation,
+//! This test suite focuses on testing the ev-reth binary compilation,
 //! CLI argument handling, and overall integration with the Reth framework.
 
 use std::process::{Command, Stdio};
 
-/// Tests that the lumen binary compiles successfully
+/// Tests that the ev-reth binary compiles successfully
 #[test]
-fn test_lumen_binary_compiles() {
+fn test_ev_reth_binary_compiles() {
     let output = Command::new("cargo")
-        .args(["build", "-p", "lumen", "--bin", "lumen"])
+        .args(["build", "-p", "ev-reth", "--bin", "ev-reth"])
         .output()
         .expect("Failed to execute cargo build");
 
@@ -20,16 +20,16 @@ fn test_lumen_binary_compiles() {
         String::from_utf8_lossy(&output.stderr)
     );
 
-    println!("✓ lumen binary compilation test passed");
+    println!("✓ ev-reth binary compilation test passed");
 }
 
-/// Tests that the lumen binary shows help without crashing
+/// Tests that the ev-reth binary shows help without crashing
 #[test]
-fn test_lumen_help() {
+fn test_ev_reth_help() {
     let output = Command::new("cargo")
-        .args(["run", "-p", "lumen", "--bin", "lumen", "--", "--help"])
+        .args(["run", "-p", "ev-reth", "--bin", "ev-reth", "--", "--help"])
         .output()
-        .expect("Failed to execute lumen --help");
+        .expect("Failed to execute ev-reth --help");
 
     // The help command should exit with code 0
     assert!(
@@ -44,16 +44,16 @@ fn test_lumen_help() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     let full_output = format!("{stdout} {stderr}");
 
-    // Check if rollkit is mentioned anywhere in the output (args, build info, etc)
+    // Check if ev-reth is mentioned anywhere in the output (args, build info, etc)
     assert!(
-        full_output.to_lowercase().contains("rollkit")
-            || full_output.contains("Rollkit")
-            || full_output.contains("lumen"), // Binary name indicates rollkit support
-        "Help output should indicate this is a rollkit-enabled build. Output: {}",
+        full_output.to_lowercase().contains("ev-reth")
+            || full_output.contains("Evolve")
+            || full_output.contains("ev-reth"), // Binary name indicates ev-reth support
+        "Help output should indicate this is a ev-reth-enabled build. Output: {}",
         &full_output[..500.min(full_output.len())] // Show first 500 chars of output
     );
 
-    println!("✓ lumen help test passed");
+    println!("✓ ev-reth help test passed");
 }
 
 /// Tests that rollkit-specific CLI arguments are recognized
@@ -61,20 +61,20 @@ fn test_lumen_help() {
 fn test_rollkit_cli_arguments() {
     // Test that rollkit-specific arguments are parsed correctly
     let output = Command::new("cargo")
-        .args(["run", "-p", "lumen", "--bin", "lumen", "--", "--help"])
+        .args(["run", "-p", "ev-reth", "--bin", "ev-reth", "--", "--help"])
         .output()
-        .expect("Failed to execute lumen help");
+        .expect("Failed to execute ev-reth help");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
-    // Check for rollkit-specific arguments or lumen branding
+    // Check for rollkit-specific arguments or ev-reth branding
     let stderr = String::from_utf8_lossy(&output.stderr);
     let full_output = format!("{stdout} {stderr}");
     assert!(
-        full_output.to_lowercase().contains("rollkit")
-            || full_output.contains("Rollkit")
-            || full_output.contains("lumen"), // Binary name indicates rollkit support
-        "Should show rollkit-related content or lumen branding"
+        full_output.to_lowercase().contains("ev-reth")
+            || full_output.contains("Evolve")
+            || full_output.contains("ev-reth"), // Binary name indicates ev-reth support
+        "Should show ev-reth-related content or ev-reth branding"
     );
 
     // Since this is a Reth-based binary, it should have basic Ethereum node functionality
@@ -89,14 +89,14 @@ fn test_rollkit_cli_arguments() {
 
 /// Tests that the binary exits gracefully with invalid arguments
 #[test]
-fn test_lumen_invalid_arguments() {
+fn test_ev_reth_invalid_arguments() {
     let output = Command::new("cargo")
         .args([
             "run",
             "-p",
-            "lumen",
+            "ev-reth",
             "--bin",
-            "lumen",
+            "ev-reth",
             "--",
             "--invalid-flag",
         ])
@@ -118,7 +118,7 @@ fn test_lumen_invalid_arguments() {
         "Error output should indicate invalid argument: {stderr}"
     );
 
-    println!("✓ lumen invalid arguments test passed");
+    println!("✓ ev-reth invalid arguments test passed");
 }
 
 /// Tests that the Engine API integration tests run successfully
@@ -161,7 +161,7 @@ fn test_rollkit_library_compilation() {
         String::from_utf8_lossy(&output.stderr)
     );
 
-    println!("✓ lumen library compilation test passed");
+    println!("✓ ev-reth library compilation test passed");
 }
 
 /// Tests that documentation can be generated successfully
@@ -180,7 +180,7 @@ fn test_rollkit_documentation_generation() {
         return;
     }
 
-    println!("✓ lumen documentation generation test passed");
+    println!("✓ ev-reth documentation generation test passed");
 }
 
 /// Tests basic workspace integration
@@ -196,8 +196,8 @@ fn test_workspace_integration() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("lumen"),
-        "Workspace should contain lumen crate"
+        stdout.contains("ev-reth"),
+        "Workspace should contain ev-reth crate"
     );
 
     println!("✓ workspace integration test passed");

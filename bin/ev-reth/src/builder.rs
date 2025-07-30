@@ -1,7 +1,7 @@
 use alloy_primitives::U256;
 use clap::Parser;
-use lumen_node::{RollkitPayloadBuilder, RollkitPayloadBuilderConfig};
-use lumen_rollkit::RollkitPayloadAttributes;
+use ev_node::{RollkitPayloadBuilder, RollkitPayloadBuilderConfig};
+use evolve_ev_reth::RollkitPayloadAttributes;
 use reth_basic_payload_builder::{
     BuildArguments, BuildOutcome, HeaderForPayload, PayloadBuilder, PayloadConfig,
 };
@@ -30,9 +30,9 @@ use crate::{attributes::RollkitEnginePayloadBuilderAttributes, RollkitEngineType
 pub struct RollkitArgs {
     /// Enable Rollkit mode for the node (enabled by default)
     #[arg(
-        long = "rollkit.enable",
+        long = "ev-reth.enable",
         default_value = "true",
-        help = "Enable Rollkit integration for transaction processing via Engine API"
+        help = "Enable Evolve integration for transaction processing via Engine API"
     )]
     pub enable_rollkit: bool,
 }

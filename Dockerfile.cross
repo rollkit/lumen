@@ -7,10 +7,10 @@ ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 
 # Copy the pre-built binary based on the target platform
-COPY dist/bin/${TARGETPLATFORM}/lumen /usr/local/bin/lumen
+COPY dist/bin/${TARGETPLATFORM}/ev-reth /usr/local/bin/ev-reth
 
 # Expose default ports
 EXPOSE 8545 8546 30303 6060 9001
 
 # Set the entrypoint
-ENTRYPOINT ["/usr/local/bin/lumen"]
+ENTRYPOINT ["/usr/local/bin/ev-reth"]
