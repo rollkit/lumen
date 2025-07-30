@@ -149,7 +149,7 @@ where
 }
 
 fn main() {
-    info!("=== ROLLKIT-RETH NODE STARTING ===");
+    info!("=== EV-RETH NODE STARTING ===");
 
     reth_cli_util::sigsegv_handler::install();
 
@@ -161,11 +161,11 @@ fn main() {
     if let Err(err) = Cli::<EthereumChainSpecParser, RollkitArgs>::parse().run(
         async move |builder, rollkit_args| {
             info!(
-                "=== ROLLKIT-RETH: Starting with args: {:?} ===",
+                "=== EV-RETH: Starting with args: {:?} ===",
                 rollkit_args
             );
-            info!("=== ROLLKIT-RETH: Rollkit mode enabled ===");
-            info!("=== ROLLKIT-RETH: Using custom payload builder with transaction support ===");
+            info!("=== EV-RETH: EV-node mode enabled ===");
+            info!("=== EV-RETH: Using custom payload builder with transaction support ===");
 
             let handle = builder
                 .node(RollkitNode::new(rollkit_args))
@@ -183,7 +183,7 @@ fn main() {
                 .launch()
                 .await?;
 
-            info!("=== ROLLKIT-RETH: Node launched successfully with rollkit payload builder ===");
+            info!("=== EV-RETH: Node launched successfully with ev-reth payload builder ===");
             handle.node_exit_future.await
         },
     ) {
