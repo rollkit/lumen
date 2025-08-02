@@ -57,7 +57,6 @@ where
         // Use best_transactions() which returns an iterator of transactions
         // ordered by their priority (gas price/priority fee)
         for best_tx in self.pool.best_transactions() {
-            // best_tx is already a ValidPoolTransaction<_> (not wrapped in Arc)
             let sz = best_tx.encoded_length() as u64;
             if total + sz > self.max_bytes {
                 break;
