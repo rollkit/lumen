@@ -48,31 +48,32 @@ where
     /// Returns a Geth-style `TxpoolContent` with raw RLP hex strings.
     async fn get_txs(&self) -> RpcResult<Vec<Bytes>> {
         //------------------------------------------------------------------//
-        // 1. Iterate pending txs and stop once we hit the byte cap         //
+        // 1. Iterate best txs (sorted by priority) and stop once we hit    //
+        //    the byte cap                                                   //
         //------------------------------------------------------------------//
         let mut total = 0u64;
-        let mut pending_map: Vec<Bytes> = Vec::new();
+        let mut selected_txs: Vec<Bytes> = Vec::new();
 
-        for arc_tx in self.pool.pending_transactions() {
-            // deref Arc<ValidPoolTransaction<_>>
-            let pooled: &ValidPoolTransaction<_> = &arc_tx;
-
-            let sz = pooled.encoded_length() as u64;
+        // Use best_transactions() which returns an iterator of transactions
+        // ordered by their priority (gas price/priority fee)
+        for best_tx in self.pool.best_transactions() {
+            // best_tx is already a ValidPoolTransaction<_> (not wrapped in Arc)
+            let sz = best_tx.encoded_length() as u64;
             if total + sz > self.max_bytes {
                 break;
             }
 
-            // inside the loop
-            let tx = pooled.to_consensus();
+            // Convert to consensus transaction and encode to RLP
+            let tx = best_tx.to_consensus();
             let mut rlp_bytes = Vec::new();
             tx.encode(&mut rlp_bytes);
 
-            pending_map.push(Bytes::from(rlp_bytes));
+            selected_txs.push(Bytes::from(rlp_bytes));
 
             total += sz;
         }
 
-        Ok(pending_map)
+        Ok(selected_txs)
     }
 }
 
