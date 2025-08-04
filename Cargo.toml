@@ -95,7 +95,6 @@ alloy-rpc-types-engine = { version = "1.0.23", default-features = false }
 alloy-signer-local = { version = "1.0.23", features = ["mnemonic"] }
 alloy-primitives = { version = "1.2.0", default-features = false }
 alloy-consensus = { version = "1.0.23", default-features = false }
-alloy-rlp = { version = "0.3", default-features = false }
 alloy-genesis = { version = "1.0.23", default-features = false }
 alloy-rpc-types-txpool = { version = "1.0.23", default-features = false }
 

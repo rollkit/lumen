@@ -48,7 +48,6 @@ alloy-rpc-types-engine.workspace = true
 alloy-primitives.workspace = true
 alloy-eips.workspace = true
 alloy-consensus.workspace = true
-alloy-rlp.workspace = true
 
 # Core dependencies
 eyre.workspace = true
