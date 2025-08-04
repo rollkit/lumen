@@ -8,8 +8,8 @@
 
 use crate::common;
 
+use alloy_eips::eip2718::Encodable2718;
 use alloy_primitives::{Address, Bytes, B256};
-use alloy_rlp::Encodable;
 use alloy_rpc_types::engine::{ForkchoiceState, PayloadId};
 use eyre::Result;
 use reth_primitives::TransactionSigned;
@@ -190,7 +190,7 @@ impl EngineApiTestNode {
 /// Encodes a transaction to bytes for Engine API
 fn encode_transaction(tx: &TransactionSigned) -> Result<Bytes> {
     let mut buf = Vec::new();
-    tx.encode(&mut buf);
+    tx.encode_2718(&mut buf);
     Ok(Bytes::from(buf))
 }
 

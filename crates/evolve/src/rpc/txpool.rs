@@ -1,9 +1,8 @@
 use alloy_primitives::Bytes;
-use alloy_rlp::Encodable;
 use async_trait::async_trait;
 use jsonrpsee_core::RpcResult;
 use jsonrpsee_proc_macros::rpc;
-use reth_transaction_pool::TransactionPool;
+use reth_transaction_pool::{PoolTransaction, TransactionPool};
 
 /// Rollkit txpool RPC API trait
 #[rpc(server, namespace = "txpoolExt")]
@@ -63,11 +62,10 @@ where
             }
 
             // Convert to consensus transaction and encode to RLP
-            let tx = best_tx.to_consensus();
-            let mut rlp_bytes = Vec::new();
-            tx.encode(&mut rlp_bytes);
+            let tx = best_tx.transaction.clone().into_consensus_with2718();
+            let bz = tx.encoded_bytes();
 
-            selected_txs.push(Bytes::from(rlp_bytes));
+            selected_txs.push(bz.clone());
 
             total += sz;
         }
