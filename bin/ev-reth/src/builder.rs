@@ -177,15 +177,6 @@ where
             None,                 // No blob sidecar for rollkit
         );
 
-        if let Some(best) = best_payload {
-            if built_payload.fees() <= best.fees() {
-                return Ok(BuildOutcome::Aborted {
-                    fees: built_payload.fees(),
-                    cached_reads: CachedReads::default(),
-                });
-            }
-        }
-
         Ok(BuildOutcome::Better {
             payload: built_payload,
             cached_reads: CachedReads::default(),
