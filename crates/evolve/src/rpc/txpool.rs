@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use jsonrpsee_core::RpcResult;
 use jsonrpsee_proc_macros::rpc;
 use reth_transaction_pool::{PoolTransaction, TransactionPool};
-use jsonrpsee::tracing::info;
+use jsonrpsee::tracing::debug;
 
 /// Rollkit txpool RPC API trait
 #[rpc(server, namespace = "txpoolExt")]
