@@ -71,7 +71,7 @@ where
             total += sz;
         }
 
-        info!("get_txs returning {} transactions", selected_txs.len());
+debug!("get_txs returning {} transactions", selected_txs.len());
         Ok(selected_txs)
     }
 }
