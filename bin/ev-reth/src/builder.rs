@@ -47,10 +47,7 @@ pub struct RollkitPayloadBuilderBuilder {
 impl RollkitPayloadBuilderBuilder {
     /// Create a new builder with rollkit args
     pub fn new(_args: &RollkitArgs) -> Self {
-        let config = RollkitPayloadBuilderConfig {
-            max_transactions: 1000,
-            min_gas_price: 1_000_000_000, // 1 Gwei
-        };
+        let config = RollkitPayloadBuilderConfig::new();
         info!("Created Rollkit payload builder with config: {:?}", config);
         Self { config }
     }
@@ -132,7 +129,7 @@ where
             cached_reads: _,
             config,
             cancel: _,
-            best_payload,
+            best_payload: _,
         } = args;
         let PayloadConfig {
             parent_header,
@@ -176,15 +173,6 @@ where
             U256::from(gas_used), // Block gas used
             None,                 // No blob sidecar for rollkit
         );
-
-        if let Some(best) = best_payload {
-            if built_payload.fees() <= best.fees() {
-                return Ok(BuildOutcome::Aborted {
-                    fees: built_payload.fees(),
-                    cached_reads: CachedReads::default(),
-                });
-            }
-        }
 
         Ok(BuildOutcome::Better {
             payload: built_payload,
