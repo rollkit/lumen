@@ -180,16 +180,21 @@ This modular design allows for:
    - Modified validator for Rollkit-specific requirements
    - Bypasses certain validations while maintaining security
 
-4. **RollkitConsensus** (`crates/rollkit/src/consensus.rs`)
+4. **Payload Builder Missing Payload Handling** (`bin/ev-reth/src/builder.rs`)
+   - Implements `on_missing_payload` to await in-progress payload builds
+   - Prevents race conditions when multiple requests are made for the same payload
+   - Ensures deterministic payload generation without redundant builds
+
+5. **RollkitConsensus** (`crates/rollkit/src/consensus.rs`)
    - Custom consensus implementation for Rollkit
    - Allows blocks with equal timestamps (parent.timestamp <= header.timestamp)
    - Wraps standard Ethereum beacon consensus for other validations
 
-5. **Rollkit Types** (`crates/rollkit/src/types.rs`)
+6. **Rollkit Types** (`crates/rollkit/src/types.rs`)
    - Rollkit-specific payload attributes and types
    - Transaction encoding/decoding utilities
 
-6. **Rollkit Txpool RPC** (`crates/rollkit/src/rpc/txpool.rs`)
+7. **Rollkit Txpool RPC** (`crates/rollkit/src/rpc/txpool.rs`)
    - Custom RPC implementation for transaction pool queries
    - Efficient transaction retrieval with size-based limits
    - Returns RLP-encoded transaction bytes for Rollkit consumption
