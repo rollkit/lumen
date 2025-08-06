@@ -3,7 +3,8 @@ use clap::Parser;
 use ev_node::{RollkitPayloadBuilder, RollkitPayloadBuilderConfig};
 use evolve_ev_reth::RollkitPayloadAttributes;
 use reth_basic_payload_builder::{
-    BuildArguments, BuildOutcome, HeaderForPayload, PayloadBuilder, PayloadConfig,
+    BuildArguments, BuildOutcome, HeaderForPayload, MissingPayloadBehaviour, PayloadBuilder,
+    PayloadConfig,
 };
 use reth_ethereum::{
     chainspec::{ChainSpec, ChainSpecProvider},
@@ -216,5 +217,14 @@ where
             U256::from(gas_used),
             None,
         ))
+    }
+
+    fn on_missing_payload(
+        &self,
+        _args: BuildArguments<Self::Attributes, Self::BuiltPayload>,
+    ) -> MissingPayloadBehaviour<Self::BuiltPayload> {
+        // we want to await the job that's already in progress because that should be returned as
+        // is, there's no benefit in racing another job
+        MissingPayloadBehaviour::AwaitInProgress
     }
 }
