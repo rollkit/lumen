@@ -2,21 +2,18 @@ use serde::{Deserialize, Serialize};
 
 /// Configuration for the Rollkit payload builder
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RollkitPayloadBuilderConfig {
-}
+pub struct RollkitPayloadBuilderConfig {}
 
 impl Default for RollkitPayloadBuilderConfig {
     fn default() -> Self {
-        Self {
-        }
+        Self {}
     }
 }
 
 impl RollkitPayloadBuilderConfig {
     /// Creates a new instance of `RollkitPayloadBuilderConfig`
     pub const fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
 
     /// Validates the configuration
