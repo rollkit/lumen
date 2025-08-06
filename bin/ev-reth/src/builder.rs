@@ -3,7 +3,8 @@ use clap::Parser;
 use ev_node::{RollkitPayloadBuilder, RollkitPayloadBuilderConfig};
 use evolve_ev_reth::RollkitPayloadAttributes;
 use reth_basic_payload_builder::{
-    BuildArguments, BuildOutcome, HeaderForPayload, PayloadBuilder, PayloadConfig,
+    BuildArguments, BuildOutcome, HeaderForPayload, MissingPayloadBehaviour, PayloadBuilder,
+    PayloadConfig,
 };
 use reth_ethereum::{
     chainspec::{ChainSpec, ChainSpecProvider},
@@ -216,5 +217,16 @@ where
             U256::from(gas_used),
             None,
         ))
+    }
+
+    /// Determines how to handle a request for a payload that is currently being built.
+    ///
+    /// This will always await the in-progress job, preventing a race with a new build.
+    /// This is the recommended behavior to prevent redundant payload builds
+    fn on_missing_payload(
+        &self,
+        _args: BuildArguments<Self::Attributes, Self::BuiltPayload>,
+    ) -> MissingPayloadBehaviour<Self::BuiltPayload> {
+        MissingPayloadBehaviour::AwaitInProgress
     }
 }
