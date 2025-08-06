@@ -219,12 +219,14 @@ where
         ))
     }
 
+    /// Determines how to handle a request for a payload that is currently being built.
+    ///
+    /// This will always await the in-progress job, preventing a race with a new build.
+    /// This is the recommended behavior to prevent redundant payload builds
     fn on_missing_payload(
         &self,
         _args: BuildArguments<Self::Attributes, Self::BuiltPayload>,
     ) -> MissingPayloadBehaviour<Self::BuiltPayload> {
-        // we want to await the job that's already in progress because that should be returned as
-        // is, there's no benefit in racing another job
         MissingPayloadBehaviour::AwaitInProgress
     }
 }
