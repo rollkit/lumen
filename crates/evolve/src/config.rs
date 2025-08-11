@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-/// Default maximum bytes for txpool transactions (1.85 MB)
-pub const DEFAULT_MAX_TXPOOL_BYTES: u64 = (1.85 * 1024.0 * 1024.0) as u64; // 1.85 MB = 1,939,866 bytes
+/// Default maximum bytes for txpool transactions (1.85 MiB)
+pub const DEFAULT_MAX_TXPOOL_BYTES: u64 = (1.85 * 1024.0 * 1024.0).round() as u64; // 1.85 MiB = 1,939,866 bytes
 
 /// Configuration for Rollkit-specific functionality
 #[derive(Debug, Clone, Serialize, Deserialize)]
