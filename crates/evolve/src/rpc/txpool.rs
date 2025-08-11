@@ -85,7 +85,7 @@ mod tests {
         // Test that the default max_txpool_bytes value is correctly set
         let config = RollkitConfig::default();
         assert_eq!(config.max_txpool_bytes, DEFAULT_MAX_TXPOOL_BYTES);
-        assert_eq!(DEFAULT_MAX_TXPOOL_BYTES, (1.85 * 1024.0 * 1024.0) as u64); // 1.85 MB
+        assert_eq!(DEFAULT_MAX_TXPOOL_BYTES, 1_939_866); // 1.85 MiB
     }
 
     #[test]
