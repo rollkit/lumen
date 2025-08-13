@@ -10,6 +10,12 @@ pub mod builder;
 pub mod error;
 pub mod validator;
 
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+mod signal_tests;
+
 use alloy_rpc_types::engine::{
     ExecutionData, ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3,
     ExecutionPayloadEnvelopeV4, ExecutionPayloadEnvelopeV5, ExecutionPayloadV1,
@@ -185,20 +191,25 @@ fn main() {
 
             // Set up graceful shutdown handling
             let shutdown_signal = async {
+                #[cfg(unix)]
                 let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
                     .expect("Failed to install SIGTERM handler");
-                let mut sigint = signal::unix::signal(signal::unix::SignalKind::interrupt())
-                    .expect("Failed to install SIGINT handler");
+
+                #[cfg(not(unix))]
+                let sigterm = std::future::pending::<()>(); // Never resolves on non-Unix
 
                 tokio::select! {
+                    #[cfg(unix)]
                     _ = sigterm.recv() => {
                         info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
                     }
-                    _ = sigint.recv() => {
-                        info!("=== EV-RETH: Received SIGINT, initiating graceful shutdown ===");
+                    #[cfg(not(unix))]
+                    _ = sigterm => {
+                        // This branch will never be reached on non-Unix systems
+                        unreachable!("SIGTERM handler should never resolve on non-Unix systems");
                     }
                     _ = signal::ctrl_c() => {
-                        info!("=== EV-RETH: Received Ctrl+C, initiating graceful shutdown ===");
+                        info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
                     }
                 }
             };
