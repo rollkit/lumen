@@ -70,6 +70,4 @@ EXPOSE 30303 30303/udp 9001 8545 8546 7545 8551
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD /usr/local/bin/ev-reth --version || exit 1
 
-# Use exec form to ensure proper signal handling
-# The application will run as PID 1 and receive signals directly
 ENTRYPOINT ["/usr/local/bin/ev-reth"]

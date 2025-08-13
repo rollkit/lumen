@@ -165,7 +165,7 @@ fn main() {
             info!("=== EV-RETH: EV-node mode enabled ===");
             info!("=== EV-RETH: Using custom payload builder with transaction support ===");
 
-            let handle = builder
+            let mut handle = builder
                 .node(RollkitNode::new(rollkit_args))
                 .extend_rpc_modules(move |ctx| {
                     // Build custom txpool RPC
@@ -205,19 +205,17 @@ fn main() {
 
             // Wait for either the node to exit naturally or a shutdown signal
             tokio::select! {
-                result = handle.node_exit_future => {
+                result = &mut handle.node_exit_future => {
                     info!("=== EV-RETH: Node exited naturally ===");
                     result
                 }
                 _ = shutdown_signal => {
                     info!("=== EV-RETH: Shutdown signal received, stopping node ===");
 
-                    // Trigger graceful shutdown
-                    if let Some(stop_handle) = handle.stop_handle {
-                        info!("=== EV-RETH: Stopping node gracefully ===");
-                        let _ = stop_handle.stop().await;
-                        info!("=== EV-RETH: Node stopped gracefully ===");
-                    }
+                    // Trigger graceful shutdown by dropping the handle
+                    // This will cause the node to shut down gracefully
+                    drop(handle);
+                    info!("=== EV-RETH: Node shutdown initiated ===");
 
                     Ok(())
                 }
