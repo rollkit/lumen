@@ -9,6 +9,8 @@ ARG BUILDPLATFORM
 # Copy the pre-built binary based on the target platform
 COPY dist/bin/${TARGETPLATFORM}/ev-reth /usr/local/bin/ev-reth
 
+RUN apt-get install -y --no-install-recommends  curl
+
 # Expose default ports
 EXPOSE 8545 8546 30303 6060 9001
 

@@ -39,6 +39,7 @@ use reth_payload_builder::EthBuiltPayload;
 use reth_trie_db::MerklePatriciaTrie;
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use tokio::signal;
 
 use crate::{
     attributes::{RollkitEnginePayloadAttributes, RollkitEnginePayloadBuilderAttributes},
@@ -181,7 +182,46 @@ fn main() {
                 .await?;
 
             info!("=== EV-RETH: Node launched successfully with ev-reth payload builder ===");
-            handle.node_exit_future.await
+
+            // Set up graceful shutdown handling
+            let shutdown_signal = async {
+                let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+                    .expect("Failed to install SIGTERM handler");
+                let mut sigint = signal::unix::signal(signal::unix::SignalKind::interrupt())
+                    .expect("Failed to install SIGINT handler");
+
+                tokio::select! {
+                    _ = sigterm.recv() => {
+                        info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
+                    }
+                    _ = sigint.recv() => {
+                        info!("=== EV-RETH: Received SIGINT, initiating graceful shutdown ===");
+                    }
+                    _ = signal::ctrl_c() => {
+                        info!("=== EV-RETH: Received Ctrl+C, initiating graceful shutdown ===");
+                    }
+                }
+            };
+
+            // Wait for either the node to exit naturally or a shutdown signal
+            tokio::select! {
+                result = handle.node_exit_future => {
+                    info!("=== EV-RETH: Node exited naturally ===");
+                    result
+                }
+                _ = shutdown_signal => {
+                    info!("=== EV-RETH: Shutdown signal received, stopping node ===");
+
+                    // Trigger graceful shutdown
+                    if let Some(stop_handle) = handle.stop_handle {
+                        info!("=== EV-RETH: Stopping node gracefully ===");
+                        let _ = stop_handle.stop().await;
+                        info!("=== EV-RETH: Node stopped gracefully ===");
+                    }
+
+                    Ok(())
+                }
+            }
         },
     ) {
         eprintln!("Error: {err:?}");
