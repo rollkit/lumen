@@ -107,27 +107,40 @@ impl NodeConfig {
     fn parse_shutdown_timeout() -> Duration {
         match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT") {
             Ok(val) => match val.parse::<u64>() {
-                Ok(secs) if (Self::MIN_SHUTDOWN_TIMEOUT_SECS..=Self::MAX_SHUTDOWN_TIMEOUT_SECS).contains(&secs) => {
-                    tracing::info!("Using custom shutdown timeout of {}s from environment", secs);
+                Ok(secs)
+                    if (Self::MIN_SHUTDOWN_TIMEOUT_SECS..=Self::MAX_SHUTDOWN_TIMEOUT_SECS)
+                        .contains(&secs) =>
+                {
+                    tracing::info!(
+                        "Using custom shutdown timeout of {}s from environment",
+                        secs
+                    );
                     Duration::from_secs(secs)
                 }
                 Ok(secs) => {
                     tracing::warn!(
                         "Shutdown timeout {}s is out of bounds ({}-{}), using default {}s",
-                        secs, Self::MIN_SHUTDOWN_TIMEOUT_SECS, Self::MAX_SHUTDOWN_TIMEOUT_SECS, Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                        secs,
+                        Self::MIN_SHUTDOWN_TIMEOUT_SECS,
+                        Self::MAX_SHUTDOWN_TIMEOUT_SECS,
+                        Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
                     );
                     Duration::from_secs(Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
                 }
                 Err(_) => {
                     tracing::warn!(
                         "Invalid EV_RETH_SHUTDOWN_TIMEOUT value '{}', using default {}s",
-                        val, Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                        val,
+                        Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
                     );
                     Duration::from_secs(Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
                 }
             },
             Err(_) => {
-                tracing::info!("Using default shutdown timeout of {}s", Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS);
+                tracing::info!(
+                    "Using default shutdown timeout of {}s",
+                    Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                );
                 Duration::from_secs(Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
             }
         }
@@ -136,21 +149,32 @@ impl NodeConfig {
     fn parse_status_check_interval() -> u64 {
         match std::env::var("EV_RETH_STATUS_CHECK_INTERVAL") {
             Ok(val) => match val.parse::<u64>() {
-                Ok(secs) if (Self::MIN_STATUS_CHECK_INTERVAL_SECS..=Self::MAX_STATUS_CHECK_INTERVAL_SECS).contains(&secs) => {
-                    tracing::info!("Using custom status check interval of {}s from environment", secs);
+                Ok(secs)
+                    if (Self::MIN_STATUS_CHECK_INTERVAL_SECS
+                        ..=Self::MAX_STATUS_CHECK_INTERVAL_SECS)
+                        .contains(&secs) =>
+                {
+                    tracing::info!(
+                        "Using custom status check interval of {}s from environment",
+                        secs
+                    );
                     secs
                 }
                 Ok(secs) => {
                     tracing::warn!(
                         "Status check interval {}s is out of bounds ({}-{}), using default {}s",
-                        secs, Self::MIN_STATUS_CHECK_INTERVAL_SECS, Self::MAX_STATUS_CHECK_INTERVAL_SECS, Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                        secs,
+                        Self::MIN_STATUS_CHECK_INTERVAL_SECS,
+                        Self::MAX_STATUS_CHECK_INTERVAL_SECS,
+                        Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
                     );
                     Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
                 }
                 Err(_) => {
                     tracing::warn!(
                         "Invalid EV_RETH_STATUS_CHECK_INTERVAL value '{}', using default {}s",
-                        val, Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                        val,
+                        Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
                     );
                     Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
                 }
@@ -169,13 +193,21 @@ async fn signal_fallback_mechanism(config: &NodeConfig) {
         while check_count < config.max_fallback_checks {
             tokio::time::sleep(Duration::from_secs(config.status_check_interval)).await;
             check_count += 1;
-            tracing::info!("Periodic status check #{} - node still running", check_count);
+            tracing::info!(
+                "Periodic status check #{} - node still running",
+                check_count
+            );
         }
 
-        tracing::info!("Maximum fallback status checks ({}) reached, switching to efficient wait", config.max_fallback_checks);
+        tracing::info!(
+            "Maximum fallback status checks ({}) reached, switching to efficient wait",
+            config.max_fallback_checks
+        );
     } else {
         tracing::info!("Using efficient fallback - waiting indefinitely for natural node exit");
-        tracing::info!("Set EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS=true to enable periodic status logging");
+        tracing::info!(
+            "Set EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS=true to enable periodic status logging"
+        );
     }
 
     // Use std::future::pending() for the most efficient "wait forever" approach
@@ -190,7 +222,7 @@ async fn handle_shutdown_signals() {
         // SIGTERM is sent by process managers, SIGINT is sent by Ctrl+C
         match (
             signal::unix::signal(signal::unix::SignalKind::terminate()),
-            signal::unix::signal(signal::unix::SignalKind::interrupt())
+            signal::unix::signal(signal::unix::SignalKind::interrupt()),
         ) {
             (Ok(mut sigterm), Ok(mut sigint)) => {
                 tokio::select! {
@@ -203,20 +235,32 @@ async fn handle_shutdown_signals() {
                 }
             }
             (Ok(mut sigterm), Err(sigint_err)) => {
-                tracing::warn!("Failed to install SIGINT handler: {}, using SIGTERM only", sigint_err);
+                tracing::warn!(
+                    "Failed to install SIGINT handler: {}, using SIGTERM only",
+                    sigint_err
+                );
                 if sigterm.recv().await.is_some() {
                     tracing::info!("Received SIGTERM, initiating graceful shutdown");
                 }
             }
             (Err(sigterm_err), Ok(mut sigint)) => {
-                tracing::warn!("Failed to install SIGTERM handler: {}, using SIGINT only", sigterm_err);
+                tracing::warn!(
+                    "Failed to install SIGTERM handler: {}, using SIGINT only",
+                    sigterm_err
+                );
                 if sigint.recv().await.is_some() {
                     tracing::info!("Received SIGINT, initiating graceful shutdown");
                 }
             }
             (Err(sigterm_err), Err(sigint_err)) => {
-                tracing::error!("Failed to install both SIGTERM and SIGINT handlers: SIGTERM={}, SIGINT={}", sigterm_err, sigint_err);
-                tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
+                tracing::error!(
+                    "Failed to install both SIGTERM and SIGINT handlers: SIGTERM={}, SIGINT={}",
+                    sigterm_err,
+                    sigint_err
+                );
+                tracing::warn!(
+                    "No signal handling available, shutdown will only occur on natural node exit"
+                );
                 let config = NodeConfig::from_env();
                 signal_fallback_mechanism(&config).await;
             }
@@ -228,7 +272,9 @@ async fn handle_shutdown_signals() {
         // On non-Unix systems, only handle Ctrl+C (SIGINT)
         if let Err(err) = signal::ctrl_c().await {
             tracing::error!("Failed to wait for SIGINT: {}", err);
-            tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
+            tracing::warn!(
+                "No signal handling available, shutdown will only occur on natural node exit"
+            );
             let config = NodeConfig::from_env();
             signal_fallback_mechanism(&config).await;
         } else {
