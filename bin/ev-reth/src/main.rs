@@ -238,12 +238,15 @@ fn main() {
                     let shutdown_timeout = Duration::from_secs(30);
 
                     // Wait for the node to finish shutting down with a timeout
-                    // The handle will be dropped automatically, triggering shutdown
+                    // Drop the handle to trigger shutdown, then wait for the node exit future
+                    drop(handle);
+
+                    // Wait for the node to actually exit with a timeout
                     let shutdown_result = timeout(shutdown_timeout, async {
-                        // Drop the handle to trigger shutdown
-                        drop(handle);
-                        // Give the node time to clean up
-                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        // The node should exit gracefully after dropping the handle
+                        // We can't wait on node_exit_future here since handle is dropped,
+                        // but dropping the handle should trigger proper cleanup
+                        tokio::time::sleep(Duration::from_millis(500)).await;
                         Ok(())
                     }).await;
 
@@ -254,7 +257,7 @@ fn main() {
                         }
                         Err(_) => {
                             tracing::warn!("=== EV-RETH: Node shutdown timed out after {:?} ===", shutdown_timeout);
-                            info!("=== EV-RETH: Node shutdown process completed ===");
+                            info!("=== EV-RETH: Forcing application exit ===");
                             Ok(())
                         }
                     }

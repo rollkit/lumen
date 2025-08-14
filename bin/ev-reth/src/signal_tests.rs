@@ -13,14 +13,6 @@ mod tests {
         assert!(result.is_ok(), "Should be able to create SIGTERM handler");
     }
 
-    /// Test that SIGINT signal handler can be created (Unix only)
-    #[tokio::test]
-    #[cfg(unix)]
-    async fn test_sigint_handler_creation() {
-        let result = signal::unix::signal(signal::unix::SignalKind::interrupt());
-        assert!(result.is_ok(), "Should be able to create SIGINT handler");
-    }
-
     /// Test that Ctrl+C handler can be created
     #[tokio::test]
     async fn test_ctrl_c_handler_creation() {
@@ -89,33 +81,24 @@ mod tests {
         assert!(result.is_ok(), "Shutdown signal branch should be selected");
     }
 
-    /// Test that multiple signal handlers can be created simultaneously (Unix only)
+    /// Test that SIGTERM and Ctrl+C handlers can be created simultaneously (Unix only)
     #[tokio::test]
     #[cfg(unix)]
-    async fn test_multiple_signal_handlers() {
+    async fn test_sigterm_and_ctrl_c_handlers() {
         let sigterm_result = signal::unix::signal(signal::unix::SignalKind::terminate());
-        let sigint_result = signal::unix::signal(signal::unix::SignalKind::interrupt());
 
         assert!(
             sigterm_result.is_ok(),
             "Should be able to create SIGTERM handler"
         );
-        assert!(
-            sigint_result.is_ok(),
-            "Should be able to create SIGINT handler"
-        );
 
-        // Test that we can set up the same pattern as in main.rs
+        // Test that we can set up the same pattern as in main.rs (SIGTERM + ctrl_c)
         let shutdown_signal = async {
             let mut sigterm = sigterm_result.unwrap();
-            let mut sigint = sigint_result.unwrap();
 
             tokio::select! {
                 _ = sigterm.recv() => {
                     println!("=== TEST: SIGTERM received ===");
-                }
-                _ = sigint.recv() => {
-                    println!("=== TEST: SIGINT received ===");
                 }
                 _ = signal::ctrl_c() => {
                     println!("=== TEST: Ctrl+C received ===");
