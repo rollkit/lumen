@@ -43,7 +43,6 @@ use reth_trie_db::MerklePatriciaTrie;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tokio::{signal, time::timeout};
-use tracing::info;
 
 use crate::{
     attributes::{RollkitEnginePayloadAttributes, RollkitEnginePayloadBuilderAttributes},
@@ -394,6 +393,9 @@ fn main() {
                     tracing::info!("Phase 2 - Waiting for graceful node termination");
 
                     // Wait for the node to actually exit with a timeout
+                    // Note: This timeout mechanism relies on the underlying reth node's graceful shutdown.
+                    // If the reth node doesn't respond to dropping the handle, the timeout will always trigger.
+                    // The actual shutdown behavior is controlled by reth's internal shutdown logic.
                     let shutdown_result = timeout(config.shutdown_timeout, &mut handle.node_exit_future).await;
 
                     tracing::info!("Phase 3 - Shutdown sequence completed");
@@ -407,10 +409,7 @@ fn main() {
                             tracing::error!("Node shutdown timed out after {:?}", config.shutdown_timeout);
                             tracing::error!("Forcing application exit - this may indicate a shutdown issue");
                             // Return an error to indicate that shutdown didn't complete gracefully
-                            Err(Box::new(std::io::Error::new(
-                                std::io::ErrorKind::TimedOut,
-                                format!("Graceful shutdown timed out after {}s", config.shutdown_timeout.as_secs())
-                            )) as Box<dyn std::error::Error + Send + Sync>)
+                            Err(eyre::eyre!("Graceful shutdown timed out after {}s", config.shutdown_timeout.as_secs()))
                         }
                     }
                 }
