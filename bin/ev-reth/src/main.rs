@@ -54,6 +54,88 @@ use crate::{
 #[global_allocator]
 static ALLOC: reth_cli_util::allocator::Allocator = reth_cli_util::allocator::new_allocator();
 
+/// Default shutdown timeout in seconds
+const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 30;
+
+/// Maximum allowed shutdown timeout in seconds (10 minutes)
+const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 600;
+
+/// Default status check interval in seconds (24 hours)
+const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 86400;
+
+/// Maximum allowed status check interval in seconds (24 hours)
+const MAX_STATUS_CHECK_INTERVAL_SECS: u64 = 86400;
+
+/// Parse and validate shutdown timeout from environment variable
+fn parse_shutdown_timeout() -> Duration {
+    match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT_SECS") {
+        Ok(val) => match val.parse::<u64>() {
+            Ok(secs) if secs > 0 && secs <= MAX_SHUTDOWN_TIMEOUT_SECS => {
+                info!("=== EV-RETH: Using custom shutdown timeout of {}s from environment ===", secs);
+                Duration::from_secs(secs)
+            }
+            Ok(secs) => {
+                tracing::warn!(
+                    "Shutdown timeout {}s is out of bounds (1-{}), using default {}s",
+                    secs, MAX_SHUTDOWN_TIMEOUT_SECS, DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                );
+                Duration::from_secs(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+            }
+            Err(_) => {
+                tracing::warn!(
+                    "Invalid EV_RETH_SHUTDOWN_TIMEOUT_SECS value '{}', using default {}s",
+                    val, DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                );
+                Duration::from_secs(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+            }
+        },
+        Err(_) => {
+            info!("=== EV-RETH: Using default shutdown timeout of {}s ===", DEFAULT_SHUTDOWN_TIMEOUT_SECS);
+            Duration::from_secs(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+        }
+    }
+}
+
+/// Parse and validate status check interval from environment variable
+fn parse_status_check_interval() -> u64 {
+    match std::env::var("EV_RETH_STATUS_CHECK_INTERVAL_SECS") {
+        Ok(val) => match val.parse::<u64>() {
+            Ok(secs) if secs > 0 && secs <= MAX_STATUS_CHECK_INTERVAL_SECS => {
+                tracing::info!("Using custom status check interval of {}s from environment", secs);
+                secs
+            }
+            Ok(secs) => {
+                tracing::warn!(
+                    "Status check interval {}s is out of bounds (1-{}), using default {}s",
+                    secs, MAX_STATUS_CHECK_INTERVAL_SECS, DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                );
+                DEFAULT_STATUS_CHECK_INTERVAL_SECS
+            }
+            Err(_) => {
+                tracing::warn!(
+                    "Invalid EV_RETH_STATUS_CHECK_INTERVAL_SECS value '{}', using default {}s",
+                    val, DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                );
+                DEFAULT_STATUS_CHECK_INTERVAL_SECS
+            }
+        },
+        Err(_) => DEFAULT_STATUS_CHECK_INTERVAL_SECS,
+    }
+}
+
+/// Fallback loop for when signal handling fails completely
+async fn signal_fallback_loop() {
+    let status_check_interval = parse_status_check_interval();
+
+    loop {
+        match tokio::time::sleep(Duration::from_secs(status_check_interval)).await {
+            () => {
+                tracing::info!("=== EV-RETH: Periodic status check - node still running ===");
+            }
+        }
+    }
+}
+
 /// Rollkit engine types - uses custom payload attributes that support transactions
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[non_exhaustive]
@@ -229,16 +311,8 @@ fn main() {
                                     // If we can't handle any signals, we should still shut down gracefully
                                     // This prevents the application from hanging indefinitely
                                     tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                                    // Use a long sleep instead of pending forever to allow periodic status checks
-                                    let status_check_interval = std::env::var("EV_RETH_STATUS_CHECK_INTERVAL_SECS")
-                                        .ok()
-                                        .and_then(|s| s.parse().ok())
-                                        .unwrap_or(86400); // Default to daily (24 hours)
-
-                                    loop {
-                                        tokio::time::sleep(Duration::from_secs(status_check_interval)).await;
-                                        tracing::info!("=== EV-RETH: Periodic status check - node still running ===");
-                                    }
+                                    // Use fallback loop with periodic status checks
+                                    signal_fallback_loop().await;
                                 }
                             }
                         }
@@ -255,16 +329,8 @@ fn main() {
                         Err(err) => {
                             tracing::error!("Failed to wait for SIGINT: {}", err);
                             tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                            // Use a long sleep instead of pending forever to allow periodic status checks
-                            let status_check_interval = std::env::var("EV_RETH_STATUS_CHECK_INTERVAL_SECS")
-                                .ok()
-                                .and_then(|s| s.parse().ok())
-                                .unwrap_or(86400); // Default to daily (24 hours)
-
-                            loop {
-                                tokio::time::sleep(Duration::from_secs(status_check_interval)).await;
-                                tracing::info!("=== EV-RETH: Periodic status check - node still running ===");
-                            }
+                            // Use fallback loop with periodic status checks
+                            signal_fallback_loop().await;
                         }
                     }
                 }
@@ -283,22 +349,7 @@ fn main() {
                     info!("=== EV-RETH: Phase 1 - Stopping new connections ===");
 
                     // Initiate graceful shutdown with configurable timeout
-                    let shutdown_timeout = match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT_SECS") {
-                        Ok(val) => match val.parse::<u64>() {
-                            Ok(secs) => {
-                                info!("=== EV-RETH: Using custom shutdown timeout of {}s from environment ===", secs);
-                                Duration::from_secs(secs)
-                            }
-                            Err(_) => {
-                                tracing::warn!("Invalid EV_RETH_SHUTDOWN_TIMEOUT_SECS value '{}', using default 30s", val);
-                                Duration::from_secs(30)
-                            }
-                        },
-                        Err(_) => {
-                            info!("=== EV-RETH: Using default shutdown timeout of 30s ===");
-                            Duration::from_secs(30)
-                        }
-                    };
+                    let shutdown_timeout = parse_shutdown_timeout();
 
                     info!("=== EV-RETH: Phase 2 - Draining active requests ===");
 
