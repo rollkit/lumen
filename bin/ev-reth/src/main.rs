@@ -163,6 +163,16 @@ fn main() {
         std::env::set_var("RUST_BACKTRACE", "1");
     }
 
+    // Install signal handlers early to avoid missing signals during startup
+    // This is a best-effort approach - actual signal handling happens in the async context
+    #[cfg(unix)]
+    {
+        // Pre-install signal handlers to reduce the window where signals might be missed
+        if let Err(err) = signal::unix::signal(signal::unix::SignalKind::terminate()) {
+            tracing::warn!("Failed to pre-install SIGTERM handler during startup: {}", err);
+        }
+    }
+
     if let Err(err) = Cli::<EthereumChainSpecParser, RollkitArgs>::parse().run(
         async move |builder, rollkit_args| {
             info!("=== EV-RETH: Starting with args: {:?} ===", rollkit_args);
@@ -226,8 +236,11 @@ fn main() {
                                     // If we can't handle any signals, we should still shut down gracefully
                                     // This prevents the application from hanging indefinitely
                                     tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                                    // Wait indefinitely - this branch should rarely be reached
-                                    std::future::pending::<()>().await;
+                                    // Use a long sleep instead of pending forever to allow periodic status checks
+                                    loop {
+                                        tokio::time::sleep(Duration::from_secs(86400)).await; // Wake up daily
+                                        tracing::info!("=== EV-RETH: Daily status check - node still running ===");
+                                    }
                                 }
                             }
                         }
@@ -244,8 +257,11 @@ fn main() {
                         Err(err) => {
                             tracing::error!("Failed to wait for SIGINT: {}", err);
                             tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                            // Wait indefinitely - this branch should rarely be reached
-                            std::future::pending::<()>().await;
+                            // Use a long sleep instead of pending forever to allow periodic status checks
+                            loop {
+                                tokio::time::sleep(Duration::from_secs(86400)).await; // Wake up daily
+                                tracing::info!("=== EV-RETH: Daily status check - node still running ===");
+                            }
                         }
                     }
                 }
@@ -263,8 +279,14 @@ fn main() {
                     // Structured shutdown phases for better observability
                     info!("=== EV-RETH: Phase 1 - Stopping new connections ===");
 
-                    // Initiate graceful shutdown with timeout
-                    let shutdown_timeout = Duration::from_secs(30);
+                    // Initiate graceful shutdown with configurable timeout
+                    let shutdown_timeout = Duration::from_secs(
+                        std::env::var("EV_RETH_SHUTDOWN_TIMEOUT_SECS")
+                            .ok()
+                            .and_then(|s| s.parse().ok())
+                            .unwrap_or(30)
+                    );
+                    info!("=== EV-RETH: Using shutdown timeout of {:?} ===", shutdown_timeout);
 
                     info!("=== EV-RETH: Phase 2 - Draining active requests ===");
 
