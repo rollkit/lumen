@@ -54,123 +54,172 @@ use crate::{
 #[global_allocator]
 static ALLOC: reth_cli_util::allocator::Allocator = reth_cli_util::allocator::new_allocator();
 
-/// Configuration constants for EV-RETH node operation
-struct Config;
+/// Centralized configuration for EV-RETH node operation
+#[derive(Debug, Clone)]
+struct NodeConfig {
+    shutdown_timeout: Duration,
+    status_check_interval: u64,
+    enable_fallback_status_checks: bool,
+    max_fallback_checks: u64,
+}
 
-impl Config {
+impl NodeConfig {
     /// Default shutdown timeout in seconds (optimized for containers)
     const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 15;
 
     /// Maximum allowed shutdown timeout in seconds (5 minutes)
     const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 300;
 
-    /// Default status check interval in seconds (1 hour - more reasonable for debugging)
+    /// Default status check interval in seconds (1 hour)
     const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 3600;
 
     /// Maximum allowed status check interval in seconds (6 hours)
     const MAX_STATUS_CHECK_INTERVAL_SECS: u64 = 21600;
 
-    /// Default maximum number of fallback status checks (24 checks at 1-hour intervals = 24 hours)
+    /// Default maximum number of fallback status checks
     const DEFAULT_MAX_FALLBACK_CHECKS: u64 = 24;
-}
 
-/// Parse and validate shutdown timeout from environment variable
-fn parse_shutdown_timeout() -> Duration {
-    match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT") {
-        Ok(val) => match val.parse::<u64>() {
-            Ok(secs) if secs > 0 && secs <= Config::MAX_SHUTDOWN_TIMEOUT_SECS => {
-                tracing::info!("Using custom shutdown timeout of {}s from environment", secs);
-                Duration::from_secs(secs)
-            }
-            Ok(secs) => {
-                tracing::warn!(
-                    "Shutdown timeout {}s is out of bounds (1-{}), using default {}s",
-                    secs, Config::MAX_SHUTDOWN_TIMEOUT_SECS, Config::DEFAULT_SHUTDOWN_TIMEOUT_SECS
-                );
-                Duration::from_secs(Config::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
-            }
-            Err(_) => {
-                tracing::warn!(
-                    "Invalid EV_RETH_SHUTDOWN_TIMEOUT value '{}', using default {}s",
-                    val, Config::DEFAULT_SHUTDOWN_TIMEOUT_SECS
-                );
-                Duration::from_secs(Config::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
-            }
-        },
-        Err(_) => {
-            tracing::info!("Using default shutdown timeout of {}s", Config::DEFAULT_SHUTDOWN_TIMEOUT_SECS);
-            Duration::from_secs(Config::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+    /// Load configuration from environment variables with validation
+    fn from_env() -> Self {
+        let shutdown_timeout = Self::parse_shutdown_timeout();
+        let status_check_interval = Self::parse_status_check_interval();
+        let enable_fallback_status_checks = std::env::var("EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS")
+            .map(|v| v.to_lowercase() == "true")
+            .unwrap_or(false);
+        let max_fallback_checks = std::env::var("EV_RETH_MAX_FALLBACK_CHECKS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(Self::DEFAULT_MAX_FALLBACK_CHECKS);
+
+        Self {
+            shutdown_timeout,
+            status_check_interval,
+            enable_fallback_status_checks,
+            max_fallback_checks,
         }
     }
-}
 
-/// Parse and validate status check interval from environment variable
-fn parse_status_check_interval() -> u64 {
-    match std::env::var("EV_RETH_STATUS_CHECK_INTERVAL") {
-        Ok(val) => match val.parse::<u64>() {
-            Ok(secs) if secs > 0 && secs <= Config::MAX_STATUS_CHECK_INTERVAL_SECS => {
-                tracing::info!("Using custom status check interval of {}s from environment", secs);
-                secs
-            }
-            Ok(secs) => {
-                tracing::warn!(
-                    "Status check interval {}s is out of bounds (1-{}), using default {}s",
-                    secs, Config::MAX_STATUS_CHECK_INTERVAL_SECS, Config::DEFAULT_STATUS_CHECK_INTERVAL_SECS
-                );
-                Config::DEFAULT_STATUS_CHECK_INTERVAL_SECS
-            }
+    fn parse_shutdown_timeout() -> Duration {
+        match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT") {
+            Ok(val) => match val.parse::<u64>() {
+                Ok(secs) if secs > 0 && secs <= Self::MAX_SHUTDOWN_TIMEOUT_SECS => {
+                    tracing::info!("Using custom shutdown timeout of {}s from environment", secs);
+                    Duration::from_secs(secs)
+                }
+                Ok(secs) => {
+                    tracing::warn!(
+                        "Shutdown timeout {}s is out of bounds (1-{}), using default {}s",
+                        secs, Self::MAX_SHUTDOWN_TIMEOUT_SECS, Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                    );
+                    Duration::from_secs(Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+                }
+                Err(_) => {
+                    tracing::warn!(
+                        "Invalid EV_RETH_SHUTDOWN_TIMEOUT value '{}', using default {}s",
+                        val, Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                    );
+                    Duration::from_secs(Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+                }
+            },
             Err(_) => {
-                tracing::warn!(
-                    "Invalid EV_RETH_STATUS_CHECK_INTERVAL value '{}', using default {}s",
-                    val, Config::DEFAULT_STATUS_CHECK_INTERVAL_SECS
-                );
-                Config::DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                tracing::info!("Using default shutdown timeout of {}s", Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS);
+                Duration::from_secs(Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
             }
-        },
-        Err(_) => Config::DEFAULT_STATUS_CHECK_INTERVAL_SECS,
+        }
+    }
+
+    fn parse_status_check_interval() -> u64 {
+        match std::env::var("EV_RETH_STATUS_CHECK_INTERVAL") {
+            Ok(val) => match val.parse::<u64>() {
+                Ok(secs) if secs > 0 && secs <= Self::MAX_STATUS_CHECK_INTERVAL_SECS => {
+                    tracing::info!("Using custom status check interval of {}s from environment", secs);
+                    secs
+                }
+                Ok(secs) => {
+                    tracing::warn!(
+                        "Status check interval {}s is out of bounds (1-{}), using default {}s",
+                        secs, Self::MAX_STATUS_CHECK_INTERVAL_SECS, Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                    );
+                    Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                }
+                Err(_) => {
+                    tracing::warn!(
+                        "Invalid EV_RETH_STATUS_CHECK_INTERVAL value '{}', using default {}s",
+                        val, Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                    );
+                    Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                }
+            },
+            Err(_) => Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS,
+        }
     }
 }
 
 /// Fallback mechanism for when signal handling fails completely
-///
-/// In most production deployments with container orchestrators, this fallback should rarely
-/// be needed as orchestrators provide their own health checks and signal handling.
-/// This provides a minimal fallback that doesn't consume unnecessary resources.
-async fn signal_fallback_mechanism() {
-    // Check if we should use periodic status checks or just wait indefinitely
-    let use_status_checks = std::env::var("EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS")
-        .map(|v| v.to_lowercase() == "true")
-        .unwrap_or(false);
-
-    if use_status_checks {
-        tracing::info!("=== EV-RETH: Fallback status checks enabled ===");
-        let status_check_interval = parse_status_check_interval();
-
-        // Limit the number of status checks to prevent infinite resource consumption
-        let max_checks = std::env::var("EV_RETH_MAX_FALLBACK_CHECKS")
-            .ok()
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(Config::DEFAULT_MAX_FALLBACK_CHECKS);
+async fn signal_fallback_mechanism(config: &NodeConfig) {
+    if config.enable_fallback_status_checks {
+        tracing::info!("Fallback status checks enabled");
 
         let mut check_count = 0;
-        while check_count < max_checks {
-            match tokio::time::sleep(Duration::from_secs(status_check_interval)).await {
-                () => {
-                    check_count += 1;
-                    tracing::info!("=== EV-RETH: Periodic status check #{} - node still running ===", check_count);
+        while check_count < config.max_fallback_checks {
+            tokio::time::sleep(Duration::from_secs(config.status_check_interval)).await;
+            check_count += 1;
+            tracing::info!("Periodic status check #{} - node still running", check_count);
+        }
+
+        tracing::info!("Maximum fallback status checks ({}) reached, switching to efficient wait", config.max_fallback_checks);
+    } else {
+        tracing::info!("Using efficient fallback - waiting indefinitely for natural node exit");
+        tracing::info!("Set EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS=true to enable periodic status logging");
+    }
+
+    // Use std::future::pending() for the most efficient "wait forever" approach
+    std::future::pending::<()>().await;
+}
+
+/// Handle shutdown signals with optimized signal handling
+async fn handle_shutdown_signals() {
+    #[cfg(unix)]
+    {
+        // On Unix systems, use a single select to handle both SIGTERM and SIGINT efficiently
+        // This avoids redundant signal handling and potential race conditions
+        match signal::unix::signal(signal::unix::SignalKind::terminate()) {
+            Ok(mut sigterm) => {
+                tokio::select! {
+                    _ = sigterm.recv() => {
+                        tracing::info!("Received SIGTERM, initiating graceful shutdown");
+                    }
+                    _ = signal::ctrl_c() => {
+                        tracing::info!("Received SIGINT/Ctrl+C, initiating graceful shutdown");
+                    }
+                }
+            }
+            Err(err) => {
+                tracing::warn!("Failed to install SIGTERM handler: {}, using SIGINT only", err);
+                // Fallback to SIGINT only - this is the most common scenario
+                if let Err(ctrl_c_err) = signal::ctrl_c().await {
+                    tracing::error!("Failed to wait for SIGINT: {}", ctrl_c_err);
+                    tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
+                    let config = NodeConfig::from_env();
+                    signal_fallback_mechanism(&config).await;
+                } else {
+                    tracing::info!("Received SIGINT/Ctrl+C, initiating graceful shutdown");
                 }
             }
         }
+    }
 
-        tracing::info!("=== EV-RETH: Maximum fallback status checks ({}) reached, switching to efficient wait ===", max_checks);
-        // After reaching max checks, switch to efficient pending wait
-        std::future::pending::<()>().await;
-    } else {
-        tracing::info!("=== EV-RETH: Using efficient fallback - waiting indefinitely for natural node exit ===");
-        tracing::info!("=== EV-RETH: Set EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS=true to enable periodic status logging ===");
-        // Use std::future::pending() for the most efficient "wait forever" approach
-        // This consumes minimal resources and is appropriate for container environments
-        std::future::pending::<()>().await;
+    #[cfg(not(unix))]
+    {
+        // On non-Unix systems, only handle Ctrl+C (SIGINT)
+        if let Err(err) = signal::ctrl_c().await {
+            tracing::error!("Failed to wait for SIGINT: {}", err);
+            tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
+            let config = NodeConfig::from_env();
+            signal_fallback_mechanism(&config).await;
+        } else {
+            tracing::info!("Received SIGINT/Ctrl+C, initiating graceful shutdown");
+        }
     }
 }
 
@@ -310,96 +359,39 @@ fn main() {
 
             tracing::info!("=== EV-RETH: Node launched successfully with ev-reth payload builder ===");
 
-            // Set up graceful shutdown handling
-            let shutdown_signal = async {
-                #[cfg(unix)]
-                {
-                    // On Unix systems, handle both SIGTERM and SIGINT (Ctrl+C)
-                    // SIGTERM is typically sent by process managers for graceful shutdown
-                    // SIGINT is sent by Ctrl+C from terminal
-                    match signal::unix::signal(signal::unix::SignalKind::terminate()) {
-                        Ok(mut sigterm) => {
-                            // Successfully set up SIGTERM handler, now wait for either signal
-                            tokio::select! {
-                                _ = sigterm.recv() => {
-                                    tracing::info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
-                                }
-                                _ = signal::ctrl_c() => {
-                                    tracing::info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            tracing::warn!("Failed to install SIGTERM handler: {}, falling back to SIGINT only", err);
-                            // Fall back to just handling SIGINT/Ctrl+C
-                            match signal::ctrl_c().await {
-                                Ok(_) => {
-                                    tracing::info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                                }
-                                Err(ctrl_c_err) => {
-                                    tracing::error!("Failed to wait for SIGINT: {}", ctrl_c_err);
-                                    tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                                    // Use efficient fallback mechanism
-                                    signal_fallback_mechanism().await;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                #[cfg(not(unix))]
-                {
-                    // On non-Unix systems, only handle Ctrl+C (SIGINT)
-                    match signal::ctrl_c().await {
-                        Ok(_) => {
-                            tracing::info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                        }
-                        Err(err) => {
-                            tracing::error!("Failed to wait for SIGINT: {}", err);
-                            tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                            // Use efficient fallback mechanism
-                            signal_fallback_mechanism().await;
-                        }
-                    }
-                }
-            };
+            // Load configuration once at startup
+            let config = NodeConfig::from_env();
 
             // Wait for either the node to exit naturally or a shutdown signal
             tokio::select! {
                 result = &mut handle.node_exit_future => {
-                    tracing::info!("=== EV-RETH: Node exited naturally ===");
+                    tracing::info!("Node exited naturally");
                     result
                 }
-                _ = shutdown_signal => {
-                    tracing::info!("=== EV-RETH: Shutdown signal received, initiating graceful shutdown ===");
+                _ = handle_shutdown_signals() => {
+                    tracing::info!("Shutdown signal received, initiating graceful shutdown");
 
                     // Structured shutdown phases for better observability
-                    tracing::info!("=== EV-RETH: Phase 1 - Stopping new connections ===");
-
-                    // Initiate graceful shutdown with configurable timeout
-                    let shutdown_timeout = parse_shutdown_timeout();
-
-                    tracing::info!("=== EV-RETH: Phase 2 - Draining active requests ===");
+                    tracing::info!("Phase 1 - Stopping new connections");
+                    tracing::info!("Phase 2 - Draining active requests");
 
                     // Wait for the node to actually exit with a timeout
-                    // Use a reference to avoid partial move issues
-                    let shutdown_result = timeout(shutdown_timeout, &mut handle.node_exit_future).await;
+                    let shutdown_result = timeout(config.shutdown_timeout, &mut handle.node_exit_future).await;
 
-                    tracing::info!("=== EV-RETH: Phase 3 - Shutdown completed ===");
+                    tracing::info!("Phase 3 - Shutdown completed");
 
                     match shutdown_result {
                         Ok(result) => {
-                            tracing::info!("=== EV-RETH: Node shutdown completed gracefully ===");
+                            tracing::info!("Node shutdown completed gracefully");
                             result
                         }
                         Err(_) => {
-                            tracing::error!("=== EV-RETH: Node shutdown timed out after {:?} ===", shutdown_timeout);
-                            tracing::error!("=== EV-RETH: Forcing application exit - this may indicate a shutdown issue ===");
+                            tracing::error!("Node shutdown timed out after {:?}", config.shutdown_timeout);
+                            tracing::error!("Forcing application exit - this may indicate a shutdown issue");
                             // Return an error to indicate that shutdown didn't complete gracefully
-                            // This provides better error reporting for monitoring systems
                             Err(Box::new(std::io::Error::new(
                                 std::io::ErrorKind::TimedOut,
-                                format!("Graceful shutdown timed out after {}s", shutdown_timeout.as_secs())
+                                format!("Graceful shutdown timed out after {}s", config.shutdown_timeout.as_secs())
                             )) as Box<dyn std::error::Error + Send + Sync>)
                         }
                     }
