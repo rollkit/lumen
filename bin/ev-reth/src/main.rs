@@ -163,15 +163,8 @@ fn main() {
         std::env::set_var("RUST_BACKTRACE", "1");
     }
 
-    // Install signal handlers early to avoid missing signals during startup
-    // This is a best-effort approach - actual signal handling happens in the async context
-    #[cfg(unix)]
-    {
-        // Pre-install signal handlers to reduce the window where signals might be missed
-        if let Err(err) = signal::unix::signal(signal::unix::SignalKind::terminate()) {
-            tracing::warn!("Failed to pre-install SIGTERM handler during startup: {}", err);
-        }
-    }
+    // Note: Signal handlers are installed in the async context after node launch
+    // This provides the most reliable signal handling without creating unused handlers
 
     if let Err(err) = Cli::<EthereumChainSpecParser, RollkitArgs>::parse().run(
         async move |builder, rollkit_args| {
@@ -237,9 +230,14 @@ fn main() {
                                     // This prevents the application from hanging indefinitely
                                     tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
                                     // Use a long sleep instead of pending forever to allow periodic status checks
+                                    let status_check_interval = std::env::var("EV_RETH_STATUS_CHECK_INTERVAL_SECS")
+                                        .ok()
+                                        .and_then(|s| s.parse().ok())
+                                        .unwrap_or(86400); // Default to daily (24 hours)
+
                                     loop {
-                                        tokio::time::sleep(Duration::from_secs(86400)).await; // Wake up daily
-                                        tracing::info!("=== EV-RETH: Daily status check - node still running ===");
+                                        tokio::time::sleep(Duration::from_secs(status_check_interval)).await;
+                                        tracing::info!("=== EV-RETH: Periodic status check - node still running ===");
                                     }
                                 }
                             }
@@ -258,9 +256,14 @@ fn main() {
                             tracing::error!("Failed to wait for SIGINT: {}", err);
                             tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
                             // Use a long sleep instead of pending forever to allow periodic status checks
+                            let status_check_interval = std::env::var("EV_RETH_STATUS_CHECK_INTERVAL_SECS")
+                                .ok()
+                                .and_then(|s| s.parse().ok())
+                                .unwrap_or(86400); // Default to daily (24 hours)
+
                             loop {
-                                tokio::time::sleep(Duration::from_secs(86400)).await; // Wake up daily
-                                tracing::info!("=== EV-RETH: Daily status check - node still running ===");
+                                tokio::time::sleep(Duration::from_secs(status_check_interval)).await;
+                                tracing::info!("=== EV-RETH: Periodic status check - node still running ===");
                             }
                         }
                     }
@@ -280,13 +283,22 @@ fn main() {
                     info!("=== EV-RETH: Phase 1 - Stopping new connections ===");
 
                     // Initiate graceful shutdown with configurable timeout
-                    let shutdown_timeout = Duration::from_secs(
-                        std::env::var("EV_RETH_SHUTDOWN_TIMEOUT_SECS")
-                            .ok()
-                            .and_then(|s| s.parse().ok())
-                            .unwrap_or(30)
-                    );
-                    info!("=== EV-RETH: Using shutdown timeout of {:?} ===", shutdown_timeout);
+                    let shutdown_timeout = match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT_SECS") {
+                        Ok(val) => match val.parse::<u64>() {
+                            Ok(secs) => {
+                                info!("=== EV-RETH: Using custom shutdown timeout of {}s from environment ===", secs);
+                                Duration::from_secs(secs)
+                            }
+                            Err(_) => {
+                                tracing::warn!("Invalid EV_RETH_SHUTDOWN_TIMEOUT_SECS value '{}', using default 30s", val);
+                                Duration::from_secs(30)
+                            }
+                        },
+                        Err(_) => {
+                            info!("=== EV-RETH: Using default shutdown timeout of 30s ===");
+                            Duration::from_secs(30)
+                        }
+                    };
 
                     info!("=== EV-RETH: Phase 2 - Draining active requests ===");
 
@@ -308,7 +320,7 @@ fn main() {
                             // This provides better error reporting for monitoring systems
                             Err(Box::new(std::io::Error::new(
                                 std::io::ErrorKind::TimedOut,
-                                format!("Node shutdown timed out after {:?}", shutdown_timeout)
+                                format!("Node shutdown timed out after {:?}. Check for stuck connections or long-running operations.", shutdown_timeout)
                             )) as Box<dyn std::error::Error + Send + Sync>)
                         }
                     }
