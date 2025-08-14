@@ -258,19 +258,21 @@ fn main() {
                     result
                 }
                 _ = shutdown_signal => {
-                    info!("=== EV-RETH: Shutdown signal received, stopping node ===");
+                    info!("=== EV-RETH: Shutdown signal received, initiating graceful shutdown ===");
+
+                    // Structured shutdown phases for better observability
+                    info!("=== EV-RETH: Phase 1 - Stopping new connections ===");
 
                     // Initiate graceful shutdown with timeout
                     let shutdown_timeout = Duration::from_secs(30);
 
-                    // Get a reference to the node exit future before dropping the handle
-                    let mut node_exit_future = handle.node_exit_future;
-
-                    // Drop the handle to trigger shutdown
-                    drop(handle);
+                    info!("=== EV-RETH: Phase 2 - Draining active requests ===");
 
                     // Wait for the node to actually exit with a timeout
-                    let shutdown_result = timeout(shutdown_timeout, node_exit_future).await;
+                    // We use the handle's node_exit_future directly to avoid partial move issues
+                    let shutdown_result = timeout(shutdown_timeout, handle.node_exit_future).await;
+
+                    info!("=== EV-RETH: Phase 3 - Shutdown completed ===");
 
                     match shutdown_result {
                         Ok(result) => {
@@ -278,9 +280,14 @@ fn main() {
                             result
                         }
                         Err(_) => {
-                            tracing::warn!("=== EV-RETH: Node shutdown timed out after {:?} ===", shutdown_timeout);
-                            info!("=== EV-RETH: Forcing application exit ===");
-                            Ok(())
+                            tracing::error!("=== EV-RETH: Node shutdown timed out after {:?} ===", shutdown_timeout);
+                            tracing::error!("=== EV-RETH: Forcing application exit - this may indicate a shutdown issue ===");
+                            // Return an error to indicate that shutdown didn't complete gracefully
+                            // This provides better error reporting for monitoring systems
+                            Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::TimedOut,
+                                format!("Node shutdown timed out after {:?}", shutdown_timeout)
+                            )) as Box<dyn std::error::Error + Send + Sync>)
                         }
                     }
                 }
