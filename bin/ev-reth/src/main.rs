@@ -412,20 +412,25 @@ fn validate_env_vars() -> Result<(), String> {
     // Validate shutdown timeout
     if let Ok(val) = std::env::var("EV_RETH_SHUTDOWN_TIMEOUT") {
         let timeout = val.parse::<u64>().map_err(|_| {
-            format!("Invalid EV_RETH_SHUTDOWN_TIMEOUT: '{}' - must be a valid number", val)
+            format!(
+                "Invalid EV_RETH_SHUTDOWN_TIMEOUT: '{}' - must be a valid number",
+                val
+            )
         })?;
 
         if timeout < NodeConfig::MIN_SHUTDOWN_TIMEOUT_SECS {
             return Err(format!(
                 "EV_RETH_SHUTDOWN_TIMEOUT: {} is below minimum of {}s",
-                timeout, NodeConfig::MIN_SHUTDOWN_TIMEOUT_SECS
+                timeout,
+                NodeConfig::MIN_SHUTDOWN_TIMEOUT_SECS
             ));
         }
 
         if timeout > NodeConfig::MAX_SHUTDOWN_TIMEOUT_SECS {
             return Err(format!(
                 "EV_RETH_SHUTDOWN_TIMEOUT: {} exceeds maximum of {}s",
-                timeout, NodeConfig::MAX_SHUTDOWN_TIMEOUT_SECS
+                timeout,
+                NodeConfig::MAX_SHUTDOWN_TIMEOUT_SECS
             ));
         }
     }
@@ -433,20 +438,25 @@ fn validate_env_vars() -> Result<(), String> {
     // Validate status check interval
     if let Ok(val) = std::env::var("EV_RETH_STATUS_CHECK_INTERVAL") {
         let interval = val.parse::<u64>().map_err(|_| {
-            format!("Invalid EV_RETH_STATUS_CHECK_INTERVAL: '{}' - must be a valid number", val)
+            format!(
+                "Invalid EV_RETH_STATUS_CHECK_INTERVAL: '{}' - must be a valid number",
+                val
+            )
         })?;
 
         if interval < NodeConfig::MIN_STATUS_CHECK_INTERVAL_SECS {
             return Err(format!(
                 "EV_RETH_STATUS_CHECK_INTERVAL: {} is below minimum of {}s",
-                interval, NodeConfig::MIN_STATUS_CHECK_INTERVAL_SECS
+                interval,
+                NodeConfig::MIN_STATUS_CHECK_INTERVAL_SECS
             ));
         }
 
         if interval > NodeConfig::MAX_STATUS_CHECK_INTERVAL_SECS {
             return Err(format!(
                 "EV_RETH_STATUS_CHECK_INTERVAL: {} exceeds maximum of {}s",
-                interval, NodeConfig::MAX_STATUS_CHECK_INTERVAL_SECS
+                interval,
+                NodeConfig::MAX_STATUS_CHECK_INTERVAL_SECS
             ));
         }
     }
@@ -465,7 +475,10 @@ fn validate_env_vars() -> Result<(), String> {
     // Validate max fallback checks
     if let Ok(val) = std::env::var("EV_RETH_MAX_FALLBACK_CHECKS") {
         val.parse::<u64>().map_err(|_| {
-            format!("Invalid EV_RETH_MAX_FALLBACK_CHECKS: '{}' - must be a valid number", val)
+            format!(
+                "Invalid EV_RETH_MAX_FALLBACK_CHECKS: '{}' - must be a valid number",
+                val
+            )
         })?;
     }
 
