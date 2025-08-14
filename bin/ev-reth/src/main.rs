@@ -67,7 +67,7 @@ impl NodeConfig {
     ///
     /// Set to 1 second to ensure basic cleanup operations can complete while preventing
     /// indefinite hangs during shutdown sequences.
-    pub const MIN_SHUTDOWN_TIMEOUT_SECS: u64 = 1;
+    pub(crate) const MIN_SHUTDOWN_TIMEOUT_SECS: u64 = 1;
 
     /// Default timeout optimized for Kubernetes pod termination grace period (30s)
     /// Set to 15s to allow cleanup before SIGKILL
@@ -76,40 +76,40 @@ impl NodeConfig {
     /// while leaving buffer time before the container orchestrator sends SIGKILL.
     /// The 15-second timeout allows for connection draining, state persistence, and
     /// cleanup operations to complete normally.
-    pub const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 15;
+    pub(crate) const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 15;
 
     /// Maximum shutdown timeout prevents indefinite hangs during node termination
     ///
     /// Set to 5 minutes (300s) to handle complex shutdown scenarios while ensuring
     /// the node doesn't hang indefinitely. This upper bound protects against
     /// deadlocks or resource contention that could prevent clean shutdown.
-    pub const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 300;
+    pub(crate) const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 300;
 
     /// Minimum status check interval ensures reasonable monitoring frequency
     ///
     /// Set to 1 second to prevent excessive CPU usage from overly frequent status checks
     /// while still allowing responsive monitoring when needed.
-    pub const MIN_STATUS_CHECK_INTERVAL_SECS: u64 = 1;
+    pub(crate) const MIN_STATUS_CHECK_INTERVAL_SECS: u64 = 1;
 
     /// Default status check interval balances monitoring with resource efficiency
     ///
     /// Set to 1 hour (3600s) to provide periodic health status logging without
     /// overwhelming logs or consuming excessive resources. This interval is suitable
     /// for long-running production deployments where occasional status updates are sufficient.
-    pub const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 3600;
+    pub(crate) const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 3600;
 
     /// Maximum status check interval prevents excessively sparse monitoring
     ///
     /// Set to 6 hours (21600s) to ensure status checks occur at least 4 times per day,
     /// providing minimum visibility into node health for operational monitoring.
-    pub const MAX_STATUS_CHECK_INTERVAL_SECS: u64 = 21600;
+    pub(crate) const MAX_STATUS_CHECK_INTERVAL_SECS: u64 = 21600;
 
     /// Default maximum fallback status checks limits resource usage during fallback mode
     ///
     /// Set to 24 checks to provide up to 24 hours of status logging (at default 1-hour intervals)
     /// before switching to efficient indefinite waiting. This prevents log spam while
     /// maintaining visibility during extended fallback periods.
-    pub const DEFAULT_MAX_FALLBACK_CHECKS: u64 = 24;
+    pub(crate) const DEFAULT_MAX_FALLBACK_CHECKS: u64 = 24;
 
     /// Load configuration from environment variables with validation
     fn from_env() -> Self {
