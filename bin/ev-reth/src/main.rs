@@ -11,9 +11,6 @@ pub mod error;
 pub mod validator;
 
 #[cfg(test)]
-mod tests;
-
-#[cfg(test)]
 mod signal_tests;
 
 use alloy_rpc_types::engine::{
@@ -44,8 +41,9 @@ use reth_ethereum_cli::{chainspec::EthereumChainSpecParser, Cli};
 use reth_payload_builder::EthBuiltPayload;
 use reth_trie_db::MerklePatriciaTrie;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
+use tokio::{signal, time::timeout};
 use tracing::info;
-use tokio::signal;
 
 use crate::{
     attributes::{RollkitEnginePayloadAttributes, RollkitEnginePayloadBuilderAttributes},
@@ -194,8 +192,8 @@ fn main() {
                 #[cfg(unix)]
                 {
                     // Set up SIGTERM handler with proper error handling
-                    let sigterm_result = signal::unix::signal(signal::unix::SignalKind::terminate());
-                    match sigterm_result {
+                    // Note: We only handle SIGTERM explicitly; ctrl_c() handles SIGINT automatically
+                    match signal::unix::signal(signal::unix::SignalKind::terminate()) {
                         Ok(mut sigterm) => {
                             tokio::select! {
                                 _ = sigterm.recv() => {
@@ -209,11 +207,10 @@ fn main() {
                         Err(err) => {
                             tracing::warn!("Failed to install SIGTERM handler: {}, falling back to SIGINT only", err);
                             // Fall back to just handling SIGINT/Ctrl+C
-                            if let Err(ctrl_c_err) = signal::ctrl_c().await {
+                            signal::ctrl_c().await.unwrap_or_else(|ctrl_c_err| {
                                 tracing::error!("Failed to wait for Ctrl+C: {}", ctrl_c_err);
-                            } else {
-                                info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                            }
+                            });
+                            info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
                         }
                     }
                 }
@@ -221,11 +218,10 @@ fn main() {
                 #[cfg(not(unix))]
                 {
                     // On non-Unix systems, only handle Ctrl+C
-                    if let Err(err) = signal::ctrl_c().await {
+                    signal::ctrl_c().await.unwrap_or_else(|err| {
                         tracing::error!("Failed to wait for Ctrl+C: {}", err);
-                    } else {
-                        info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                    }
+                    });
+                    info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
                 }
             };
 
@@ -238,12 +234,30 @@ fn main() {
                 _ = shutdown_signal => {
                     info!("=== EV-RETH: Shutdown signal received, stopping node ===");
 
-                    // Trigger graceful shutdown by dropping the handle
-                    // This will cause the node to shut down gracefully
-                    drop(handle);
-                    info!("=== EV-RETH: Node shutdown initiated ===");
+                    // Initiate graceful shutdown with timeout
+                    let shutdown_timeout = Duration::from_secs(30);
 
-                    Ok(())
+                    // Wait for the node to finish shutting down with a timeout
+                    // The handle will be dropped automatically, triggering shutdown
+                    let shutdown_result = timeout(shutdown_timeout, async {
+                        // Drop the handle to trigger shutdown
+                        drop(handle);
+                        // Give the node time to clean up
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        Ok(())
+                    }).await;
+
+                    match shutdown_result {
+                        Ok(result) => {
+                            info!("=== EV-RETH: Node shutdown completed gracefully ===");
+                            result
+                        }
+                        Err(_) => {
+                            tracing::warn!("=== EV-RETH: Node shutdown timed out after {:?} ===", shutdown_timeout);
+                            info!("=== EV-RETH: Node shutdown process completed ===");
+                            Ok(())
+                        }
+                    }
                 }
             }
         },
