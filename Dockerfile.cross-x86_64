@@ -4,6 +4,7 @@ FROM ghcr.io/cross-rs/cross:main
 RUN apt-get update && \
     apt-get install -y \
         build-essential \
+        curl \
         pkg-config \
         libclang-dev \
         clang && \
