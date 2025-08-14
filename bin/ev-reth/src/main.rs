@@ -192,23 +192,38 @@ fn main() {
             // Set up graceful shutdown handling
             let shutdown_signal = async {
                 #[cfg(unix)]
-                let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
-                    .expect("Failed to install SIGTERM handler");
+                {
+                    // Set up SIGTERM handler with proper error handling
+                    let sigterm_result = signal::unix::signal(signal::unix::SignalKind::terminate());
+                    match sigterm_result {
+                        Ok(mut sigterm) => {
+                            tokio::select! {
+                                _ = sigterm.recv() => {
+                                    info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
+                                }
+                                _ = signal::ctrl_c() => {
+                                    info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            tracing::warn!("Failed to install SIGTERM handler: {}, falling back to SIGINT only", err);
+                            // Fall back to just handling SIGINT/Ctrl+C
+                            if let Err(ctrl_c_err) = signal::ctrl_c().await {
+                                tracing::error!("Failed to wait for Ctrl+C: {}", ctrl_c_err);
+                            } else {
+                                info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                            }
+                        }
+                    }
+                }
 
                 #[cfg(not(unix))]
-                let sigterm = std::future::pending::<()>(); // Never resolves on non-Unix
-
-                tokio::select! {
-                    #[cfg(unix)]
-                    _ = sigterm.recv() => {
-                        info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
-                    }
-                    #[cfg(not(unix))]
-                    _ = sigterm => {
-                        // This branch will never be reached on non-Unix systems
-                        unreachable!("SIGTERM handler should never resolve on non-Unix systems");
-                    }
-                    _ = signal::ctrl_c() => {
+                {
+                    // On non-Unix systems, only handle Ctrl+C
+                    if let Err(err) = signal::ctrl_c().await {
+                        tracing::error!("Failed to wait for Ctrl+C: {}", err);
+                    } else {
                         info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
                     }
                 }
