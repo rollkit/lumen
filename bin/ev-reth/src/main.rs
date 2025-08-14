@@ -63,26 +63,53 @@ struct NodeConfig {
 }
 
 impl NodeConfig {
-    /// Minimum allowed shutdown timeout in seconds
-    const MIN_SHUTDOWN_TIMEOUT_SECS: u64 = 1;
+    /// Minimum shutdown timeout prevents immediate termination that could cause data corruption
+    ///
+    /// Set to 1 second to ensure basic cleanup operations can complete while preventing
+    /// indefinite hangs during shutdown sequences.
+    pub const MIN_SHUTDOWN_TIMEOUT_SECS: u64 = 1;
 
-    /// Default shutdown timeout in seconds (optimized for containers)
-    const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 15;
+    /// Default timeout optimized for Kubernetes pod termination grace period (30s)
+    /// Set to 15s to allow cleanup before SIGKILL
+    ///
+    /// This provides sufficient time for graceful shutdown in containerized environments
+    /// while leaving buffer time before the container orchestrator sends SIGKILL.
+    /// The 15-second timeout allows for connection draining, state persistence, and
+    /// cleanup operations to complete normally.
+    pub const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 15;
 
-    /// Maximum allowed shutdown timeout in seconds (5 minutes)
-    const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 300;
+    /// Maximum shutdown timeout prevents indefinite hangs during node termination
+    ///
+    /// Set to 5 minutes (300s) to handle complex shutdown scenarios while ensuring
+    /// the node doesn't hang indefinitely. This upper bound protects against
+    /// deadlocks or resource contention that could prevent clean shutdown.
+    pub const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 300;
 
-    /// Minimum allowed status check interval in seconds
-    const MIN_STATUS_CHECK_INTERVAL_SECS: u64 = 1;
+    /// Minimum status check interval ensures reasonable monitoring frequency
+    ///
+    /// Set to 1 second to prevent excessive CPU usage from overly frequent status checks
+    /// while still allowing responsive monitoring when needed.
+    pub const MIN_STATUS_CHECK_INTERVAL_SECS: u64 = 1;
 
-    /// Default status check interval in seconds (1 hour)
-    const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 3600;
+    /// Default status check interval balances monitoring with resource efficiency
+    ///
+    /// Set to 1 hour (3600s) to provide periodic health status logging without
+    /// overwhelming logs or consuming excessive resources. This interval is suitable
+    /// for long-running production deployments where occasional status updates are sufficient.
+    pub const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 3600;
 
-    /// Maximum allowed status check interval in seconds (6 hours)
-    const MAX_STATUS_CHECK_INTERVAL_SECS: u64 = 21600;
+    /// Maximum status check interval prevents excessively sparse monitoring
+    ///
+    /// Set to 6 hours (21600s) to ensure status checks occur at least 4 times per day,
+    /// providing minimum visibility into node health for operational monitoring.
+    pub const MAX_STATUS_CHECK_INTERVAL_SECS: u64 = 21600;
 
-    /// Default maximum number of fallback status checks
-    const DEFAULT_MAX_FALLBACK_CHECKS: u64 = 24;
+    /// Default maximum fallback status checks limits resource usage during fallback mode
+    ///
+    /// Set to 24 checks to provide up to 24 hours of status logging (at default 1-hour intervals)
+    /// before switching to efficient indefinite waiting. This prevents log spam while
+    /// maintaining visibility during extended fallback periods.
+    pub const DEFAULT_MAX_FALLBACK_CHECKS: u64 = 24;
 
     /// Load configuration from environment variables with validation
     fn from_env() -> Self {
@@ -215,7 +242,7 @@ async fn signal_fallback_mechanism(config: &NodeConfig) {
 }
 
 /// Handle shutdown signals with optimized, non-redundant signal handling
-async fn handle_shutdown_signals() {
+async fn handle_shutdown_signals(config: &NodeConfig) {
     #[cfg(unix)]
     {
         // On Unix systems, handle SIGTERM and SIGINT separately to avoid redundancy
@@ -261,8 +288,7 @@ async fn handle_shutdown_signals() {
                 tracing::warn!(
                     "No signal handling available, shutdown will only occur on natural node exit"
                 );
-                let config = NodeConfig::from_env();
-                signal_fallback_mechanism(&config).await;
+                signal_fallback_mechanism(config).await;
             }
         }
     }
@@ -275,8 +301,7 @@ async fn handle_shutdown_signals() {
             tracing::warn!(
                 "No signal handling available, shutdown will only occur on natural node exit"
             );
-            let config = NodeConfig::from_env();
-            signal_fallback_mechanism(&config).await;
+            signal_fallback_mechanism(config).await;
         } else {
             tracing::info!("Received SIGINT/Ctrl+C, initiating graceful shutdown");
         }
@@ -382,8 +407,90 @@ where
     }
 }
 
+/// Validate critical environment variables at startup to prevent runtime issues
+fn validate_env_vars() -> Result<(), String> {
+    // Validate shutdown timeout
+    if let Ok(val) = std::env::var("EV_RETH_SHUTDOWN_TIMEOUT") {
+        let timeout = val.parse::<u64>().map_err(|_| {
+            format!("Invalid EV_RETH_SHUTDOWN_TIMEOUT: '{}' - must be a valid number", val)
+        })?;
+
+        if timeout < NodeConfig::MIN_SHUTDOWN_TIMEOUT_SECS {
+            return Err(format!(
+                "EV_RETH_SHUTDOWN_TIMEOUT: {} is below minimum of {}s",
+                timeout, NodeConfig::MIN_SHUTDOWN_TIMEOUT_SECS
+            ));
+        }
+
+        if timeout > NodeConfig::MAX_SHUTDOWN_TIMEOUT_SECS {
+            return Err(format!(
+                "EV_RETH_SHUTDOWN_TIMEOUT: {} exceeds maximum of {}s",
+                timeout, NodeConfig::MAX_SHUTDOWN_TIMEOUT_SECS
+            ));
+        }
+    }
+
+    // Validate status check interval
+    if let Ok(val) = std::env::var("EV_RETH_STATUS_CHECK_INTERVAL") {
+        let interval = val.parse::<u64>().map_err(|_| {
+            format!("Invalid EV_RETH_STATUS_CHECK_INTERVAL: '{}' - must be a valid number", val)
+        })?;
+
+        if interval < NodeConfig::MIN_STATUS_CHECK_INTERVAL_SECS {
+            return Err(format!(
+                "EV_RETH_STATUS_CHECK_INTERVAL: {} is below minimum of {}s",
+                interval, NodeConfig::MIN_STATUS_CHECK_INTERVAL_SECS
+            ));
+        }
+
+        if interval > NodeConfig::MAX_STATUS_CHECK_INTERVAL_SECS {
+            return Err(format!(
+                "EV_RETH_STATUS_CHECK_INTERVAL: {} exceeds maximum of {}s",
+                interval, NodeConfig::MAX_STATUS_CHECK_INTERVAL_SECS
+            ));
+        }
+    }
+
+    // Validate fallback status checks flag
+    if let Ok(val) = std::env::var("EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS") {
+        let normalized = val.to_lowercase();
+        if normalized != "true" && normalized != "false" {
+            return Err(format!(
+                "Invalid EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS: '{}' - must be 'true' or 'false'",
+                val
+            ));
+        }
+    }
+
+    // Validate max fallback checks
+    if let Ok(val) = std::env::var("EV_RETH_MAX_FALLBACK_CHECKS") {
+        val.parse::<u64>().map_err(|_| {
+            format!("Invalid EV_RETH_MAX_FALLBACK_CHECKS: '{}' - must be a valid number", val)
+        })?;
+    }
+
+    // Validate RUST_BACKTRACE if set by user (we set it ourselves if not present)
+    if let Ok(val) = std::env::var("RUST_BACKTRACE") {
+        let normalized = val.to_lowercase();
+        if normalized != "0" && normalized != "1" && normalized != "full" {
+            return Err(format!(
+                "Invalid RUST_BACKTRACE: '{}' - must be '0', '1', or 'full'",
+                val
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 fn main() {
     tracing::info!("=== EV-RETH NODE STARTING ===");
+
+    // Validate environment variables early to catch configuration issues
+    if let Err(err) = validate_env_vars() {
+        eprintln!("Environment variable validation failed: {}", err);
+        std::process::exit(1);
+    }
 
     reth_cli_util::sigsegv_handler::install();
 
@@ -428,7 +535,7 @@ fn main() {
                     tracing::info!("Node exited naturally");
                     result
                 }
-                _ = handle_shutdown_signals() => {
+                _ = handle_shutdown_signals(&config) => {
                     tracing::info!("Shutdown signal received, initiating graceful shutdown");
 
                     // Structured shutdown phases for better observability (informational only)
