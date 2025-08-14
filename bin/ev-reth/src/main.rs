@@ -64,11 +64,17 @@ struct NodeConfig {
 }
 
 impl NodeConfig {
+    /// Minimum allowed shutdown timeout in seconds
+    const MIN_SHUTDOWN_TIMEOUT_SECS: u64 = 1;
+
     /// Default shutdown timeout in seconds (optimized for containers)
     const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 15;
 
     /// Maximum allowed shutdown timeout in seconds (5 minutes)
     const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 300;
+
+    /// Minimum allowed status check interval in seconds
+    const MIN_STATUS_CHECK_INTERVAL_SECS: u64 = 1;
 
     /// Default status check interval in seconds (1 hour)
     const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 3600;
@@ -102,14 +108,14 @@ impl NodeConfig {
     fn parse_shutdown_timeout() -> Duration {
         match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT") {
             Ok(val) => match val.parse::<u64>() {
-                Ok(secs) if secs > 0 && secs <= Self::MAX_SHUTDOWN_TIMEOUT_SECS => {
+                Ok(secs) if secs >= Self::MIN_SHUTDOWN_TIMEOUT_SECS && secs <= Self::MAX_SHUTDOWN_TIMEOUT_SECS => {
                     tracing::info!("Using custom shutdown timeout of {}s from environment", secs);
                     Duration::from_secs(secs)
                 }
                 Ok(secs) => {
                     tracing::warn!(
-                        "Shutdown timeout {}s is out of bounds (1-{}), using default {}s",
-                        secs, Self::MAX_SHUTDOWN_TIMEOUT_SECS, Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                        "Shutdown timeout {}s is out of bounds ({}-{}), using default {}s",
+                        secs, Self::MIN_SHUTDOWN_TIMEOUT_SECS, Self::MAX_SHUTDOWN_TIMEOUT_SECS, Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS
                     );
                     Duration::from_secs(Self::DEFAULT_SHUTDOWN_TIMEOUT_SECS)
                 }
@@ -131,14 +137,14 @@ impl NodeConfig {
     fn parse_status_check_interval() -> u64 {
         match std::env::var("EV_RETH_STATUS_CHECK_INTERVAL") {
             Ok(val) => match val.parse::<u64>() {
-                Ok(secs) if secs > 0 && secs <= Self::MAX_STATUS_CHECK_INTERVAL_SECS => {
+                Ok(secs) if secs >= Self::MIN_STATUS_CHECK_INTERVAL_SECS && secs <= Self::MAX_STATUS_CHECK_INTERVAL_SECS => {
                     tracing::info!("Using custom status check interval of {}s from environment", secs);
                     secs
                 }
                 Ok(secs) => {
                     tracing::warn!(
-                        "Status check interval {}s is out of bounds (1-{}), using default {}s",
-                        secs, Self::MAX_STATUS_CHECK_INTERVAL_SECS, Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                        "Status check interval {}s is out of bounds ({}-{}), using default {}s",
+                        secs, Self::MIN_STATUS_CHECK_INTERVAL_SECS, Self::MAX_STATUS_CHECK_INTERVAL_SECS, Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
                     );
                     Self::DEFAULT_STATUS_CHECK_INTERVAL_SECS
                 }
@@ -177,34 +183,43 @@ async fn signal_fallback_mechanism(config: &NodeConfig) {
     std::future::pending::<()>().await;
 }
 
-/// Handle shutdown signals with optimized signal handling
+/// Handle shutdown signals with optimized, non-redundant signal handling
 async fn handle_shutdown_signals() {
     #[cfg(unix)]
     {
-        // On Unix systems, use a single select to handle both SIGTERM and SIGINT efficiently
-        // This avoids redundant signal handling and potential race conditions
-        match signal::unix::signal(signal::unix::SignalKind::terminate()) {
-            Ok(mut sigterm) => {
+        // On Unix systems, handle SIGTERM and SIGINT separately to avoid redundancy
+        // SIGTERM is sent by process managers, SIGINT is sent by Ctrl+C
+        match (
+            signal::unix::signal(signal::unix::SignalKind::terminate()),
+            signal::unix::signal(signal::unix::SignalKind::interrupt())
+        ) {
+            (Ok(mut sigterm), Ok(mut sigint)) => {
                 tokio::select! {
                     _ = sigterm.recv() => {
                         tracing::info!("Received SIGTERM, initiating graceful shutdown");
                     }
-                    _ = signal::ctrl_c() => {
-                        tracing::info!("Received SIGINT/Ctrl+C, initiating graceful shutdown");
+                    _ = sigint.recv() => {
+                        tracing::info!("Received SIGINT, initiating graceful shutdown");
                     }
                 }
             }
-            Err(err) => {
-                tracing::warn!("Failed to install SIGTERM handler: {}, using SIGINT only", err);
-                // Fallback to SIGINT only - this is the most common scenario
-                if let Err(ctrl_c_err) = signal::ctrl_c().await {
-                    tracing::error!("Failed to wait for SIGINT: {}", ctrl_c_err);
-                    tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                    let config = NodeConfig::from_env();
-                    signal_fallback_mechanism(&config).await;
-                } else {
-                    tracing::info!("Received SIGINT/Ctrl+C, initiating graceful shutdown");
+            (Ok(mut sigterm), Err(sigint_err)) => {
+                tracing::warn!("Failed to install SIGINT handler: {}, using SIGTERM only", sigint_err);
+                if sigterm.recv().await.is_some() {
+                    tracing::info!("Received SIGTERM, initiating graceful shutdown");
                 }
+            }
+            (Err(sigterm_err), Ok(mut sigint)) => {
+                tracing::warn!("Failed to install SIGTERM handler: {}, using SIGINT only", sigterm_err);
+                if sigint.recv().await.is_some() {
+                    tracing::info!("Received SIGINT, initiating graceful shutdown");
+                }
+            }
+            (Err(sigterm_err), Err(sigint_err)) => {
+                tracing::error!("Failed to install both SIGTERM and SIGINT handlers: SIGTERM={}, SIGINT={}", sigterm_err, sigint_err);
+                tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
+                let config = NodeConfig::from_env();
+                signal_fallback_mechanism(&config).await;
             }
         }
     }
@@ -371,14 +386,17 @@ fn main() {
                 _ = handle_shutdown_signals() => {
                     tracing::info!("Shutdown signal received, initiating graceful shutdown");
 
-                    // Structured shutdown phases for better observability
-                    tracing::info!("Phase 1 - Stopping new connections");
-                    tracing::info!("Phase 2 - Draining active requests");
+                    // Structured shutdown phases for better observability (informational only)
+                    // Note: These phases are logged for monitoring purposes but don't implement
+                    // specific connection stopping or request draining - the underlying reth node
+                    // handles the actual shutdown logic when the handle is dropped
+                    tracing::info!("Phase 1 - Initiating shutdown sequence");
+                    tracing::info!("Phase 2 - Waiting for graceful node termination");
 
                     // Wait for the node to actually exit with a timeout
                     let shutdown_result = timeout(config.shutdown_timeout, &mut handle.node_exit_future).await;
 
-                    tracing::info!("Phase 3 - Shutdown completed");
+                    tracing::info!("Phase 3 - Shutdown sequence completed");
 
                     match shutdown_result {
                         Ok(result) => {
