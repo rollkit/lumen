@@ -58,12 +58,18 @@ static ALLOC: reth_cli_util::allocator::Allocator = reth_cli_util::allocator::ne
 const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 30;
 
 /// Maximum allowed shutdown timeout in seconds (10 minutes)
+/// Rationale: Prevents excessively long shutdown timeouts that could delay container restarts
+/// or system maintenance. 10 minutes should be sufficient for most graceful shutdown scenarios.
 const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 600;
 
 /// Default status check interval in seconds (24 hours)
+/// Rationale: Provides periodic status logging in fallback scenarios without excessive overhead.
+/// Most container orchestrators have their own health checks, so this is primarily for debugging.
 const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 86400;
 
 /// Maximum allowed status check interval in seconds (24 hours)
+/// Rationale: Prevents excessive resource consumption from too-frequent status checks
+/// while ensuring reasonable feedback in fallback scenarios.
 const MAX_STATUS_CHECK_INTERVAL_SECS: u64 = 86400;
 
 /// Parse and validate shutdown timeout from environment variable
@@ -123,16 +129,34 @@ fn parse_status_check_interval() -> u64 {
     }
 }
 
-/// Fallback loop for when signal handling fails completely
-async fn signal_fallback_loop() {
-    let status_check_interval = parse_status_check_interval();
+/// Fallback mechanism for when signal handling fails completely
+///
+/// In most production deployments with container orchestrators, this fallback should rarely
+/// be needed as orchestrators provide their own health checks and signal handling.
+/// This provides a minimal fallback that doesn't consume unnecessary resources.
+async fn signal_fallback_mechanism() {
+    // Check if we should use periodic status checks or just wait indefinitely
+    let use_status_checks = std::env::var("EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS")
+        .map(|v| v.to_lowercase() == "true")
+        .unwrap_or(false);
 
-    loop {
-        match tokio::time::sleep(Duration::from_secs(status_check_interval)).await {
-            () => {
-                tracing::info!("=== EV-RETH: Periodic status check - node still running ===");
+    if use_status_checks {
+        tracing::info!("=== EV-RETH: Fallback status checks enabled ===");
+        let status_check_interval = parse_status_check_interval();
+
+        loop {
+            match tokio::time::sleep(Duration::from_secs(status_check_interval)).await {
+                () => {
+                    tracing::info!("=== EV-RETH: Periodic status check - node still running ===");
+                }
             }
         }
+    } else {
+        tracing::info!("=== EV-RETH: Using efficient fallback - waiting indefinitely for natural node exit ===");
+        tracing::info!("=== EV-RETH: Set EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS=true to enable periodic status logging ===");
+        // Use std::future::pending() for the most efficient "wait forever" approach
+        // This consumes minimal resources and is appropriate for container environments
+        std::future::pending::<()>().await;
     }
 }
 
@@ -311,8 +335,8 @@ fn main() {
                                     // If we can't handle any signals, we should still shut down gracefully
                                     // This prevents the application from hanging indefinitely
                                     tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                                    // Use fallback loop with periodic status checks
-                                    signal_fallback_loop().await;
+                                    // Use efficient fallback mechanism
+                                    signal_fallback_mechanism().await;
                                 }
                             }
                         }
@@ -329,8 +353,8 @@ fn main() {
                         Err(err) => {
                             tracing::error!("Failed to wait for SIGINT: {}", err);
                             tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
-                            // Use fallback loop with periodic status checks
-                            signal_fallback_loop().await;
+                            // Use efficient fallback mechanism
+                            signal_fallback_mechanism().await;
                         }
                     }
                 }
@@ -354,8 +378,8 @@ fn main() {
                     info!("=== EV-RETH: Phase 2 - Draining active requests ===");
 
                     // Wait for the node to actually exit with a timeout
-                    // We use the handle's node_exit_future directly to avoid partial move issues
-                    let shutdown_result = timeout(shutdown_timeout, handle.node_exit_future).await;
+                    // Use a reference to avoid partial move issues
+                    let shutdown_result = timeout(shutdown_timeout, &mut handle.node_exit_future).await;
 
                     info!("=== EV-RETH: Phase 3 - Shutdown completed ===");
 
