@@ -54,78 +54,93 @@ use crate::{
 #[global_allocator]
 static ALLOC: reth_cli_util::allocator::Allocator = reth_cli_util::allocator::new_allocator();
 
-/// Default shutdown timeout in seconds
-const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 30;
+/// Shutdown configuration constants
+mod shutdown_config {
+    use std::time::Duration;
 
-/// Maximum allowed shutdown timeout in seconds (10 minutes)
-/// Rationale: Prevents excessively long shutdown timeouts that could delay container restarts
-/// or system maintenance. 10 minutes should be sufficient for most graceful shutdown scenarios.
-const MAX_SHUTDOWN_TIMEOUT_SECS: u64 = 600;
+    /// Default shutdown timeout in seconds
+    pub const DEFAULT_TIMEOUT_SECS: u64 = 30;
 
-/// Default status check interval in seconds (24 hours)
-/// Rationale: Provides periodic status logging in fallback scenarios without excessive overhead.
-/// Most container orchestrators have their own health checks, so this is primarily for debugging.
-const DEFAULT_STATUS_CHECK_INTERVAL_SECS: u64 = 86400;
+    /// Maximum allowed shutdown timeout in seconds (10 minutes)
+    /// Rationale: Prevents excessively long shutdown timeouts that could delay container restarts
+    /// or system maintenance. 10 minutes should be sufficient for most graceful shutdown scenarios.
+    pub const MAX_TIMEOUT_SECS: u64 = 600;
 
-/// Maximum allowed status check interval in seconds (24 hours)
-/// Rationale: Prevents excessive resource consumption from too-frequent status checks
-/// while ensuring reasonable feedback in fallback scenarios.
-const MAX_STATUS_CHECK_INTERVAL_SECS: u64 = 86400;
+    /// Default shutdown timeout as Duration
+    pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(DEFAULT_TIMEOUT_SECS);
+}
+
+/// Fallback status check configuration constants
+mod status_check_config {
+    /// Default status check interval in seconds (24 hours)
+    /// Rationale: Provides periodic status logging in fallback scenarios without excessive overhead.
+    /// Most container orchestrators have their own health checks, so this is primarily for debugging.
+    pub const DEFAULT_INTERVAL_SECS: u64 = 86400;
+
+    /// Maximum allowed status check interval in seconds (24 hours)
+    /// Rationale: Prevents excessive resource consumption from too-frequent status checks
+    /// while ensuring reasonable feedback in fallback scenarios.
+    pub const MAX_INTERVAL_SECS: u64 = 86400;
+
+    /// Default maximum number of fallback status checks
+    /// Rationale: 144 checks at 10-minute intervals = 24 hours of status checks before switching to efficient wait
+    pub const DEFAULT_MAX_CHECKS: u64 = 144;
+}
 
 /// Parse and validate shutdown timeout from environment variable
 fn parse_shutdown_timeout() -> Duration {
-    match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT_SECS") {
+    match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT") {
         Ok(val) => match val.parse::<u64>() {
-            Ok(secs) if secs > 0 && secs <= MAX_SHUTDOWN_TIMEOUT_SECS => {
+            Ok(secs) if secs > 0 && secs <= shutdown_config::MAX_TIMEOUT_SECS => {
                 info!("=== EV-RETH: Using custom shutdown timeout of {}s from environment ===", secs);
                 Duration::from_secs(secs)
             }
             Ok(secs) => {
                 tracing::warn!(
                     "Shutdown timeout {}s is out of bounds (1-{}), using default {}s",
-                    secs, MAX_SHUTDOWN_TIMEOUT_SECS, DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                    secs, shutdown_config::MAX_TIMEOUT_SECS, shutdown_config::DEFAULT_TIMEOUT_SECS
                 );
-                Duration::from_secs(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+                shutdown_config::DEFAULT_TIMEOUT
             }
             Err(_) => {
                 tracing::warn!(
-                    "Invalid EV_RETH_SHUTDOWN_TIMEOUT_SECS value '{}', using default {}s",
-                    val, DEFAULT_SHUTDOWN_TIMEOUT_SECS
+                    "Invalid EV_RETH_SHUTDOWN_TIMEOUT value '{}', using default {}s",
+                    val, shutdown_config::DEFAULT_TIMEOUT_SECS
                 );
-                Duration::from_secs(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+                shutdown_config::DEFAULT_TIMEOUT
             }
         },
         Err(_) => {
-            info!("=== EV-RETH: Using default shutdown timeout of {}s ===", DEFAULT_SHUTDOWN_TIMEOUT_SECS);
-            Duration::from_secs(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+            info!("=== EV-RETH: Using default shutdown timeout of {}s ===", shutdown_config::DEFAULT_TIMEOUT_SECS);
+            shutdown_config::DEFAULT_TIMEOUT
         }
     }
 }
 
 /// Parse and validate status check interval from environment variable
 fn parse_status_check_interval() -> u64 {
-    match std::env::var("EV_RETH_STATUS_CHECK_INTERVAL_SECS") {
+    match std::env::var("EV_RETH_STATUS_CHECK_INTERVAL") {
         Ok(val) => match val.parse::<u64>() {
-            Ok(secs) if secs > 0 && secs <= MAX_STATUS_CHECK_INTERVAL_SECS => {
+            Ok(secs) if secs > 0 && secs <= status_check_config::MAX_INTERVAL_SECS => {
                 tracing::info!("Using custom status check interval of {}s from environment", secs);
                 secs
             }
             Ok(secs) => {
                 tracing::warn!(
                     "Status check interval {}s is out of bounds (1-{}), using default {}s",
-                    secs, MAX_STATUS_CHECK_INTERVAL_SECS, DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                    secs, status_check_config::MAX_INTERVAL_SECS, status_check_config::DEFAULT_INTERVAL_SECS
                 );
-                DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                status_check_config::DEFAULT_INTERVAL_SECS
             }
             Err(_) => {
                 tracing::warn!(
-                    "Invalid EV_RETH_STATUS_CHECK_INTERVAL_SECS value '{}', using default {}s",
-                    val, DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                    "Invalid EV_RETH_STATUS_CHECK_INTERVAL value '{}', using default {}s",
+                    val, status_check_config::DEFAULT_INTERVAL_SECS
                 );
-                DEFAULT_STATUS_CHECK_INTERVAL_SECS
+                status_check_config::DEFAULT_INTERVAL_SECS
             }
         },
-        Err(_) => DEFAULT_STATUS_CHECK_INTERVAL_SECS,
+        Err(_) => status_check_config::DEFAULT_INTERVAL_SECS,
     }
 }
 
@@ -144,13 +159,25 @@ async fn signal_fallback_mechanism() {
         tracing::info!("=== EV-RETH: Fallback status checks enabled ===");
         let status_check_interval = parse_status_check_interval();
 
-        loop {
+        // Limit the number of status checks to prevent infinite resource consumption
+        let max_checks = std::env::var("EV_RETH_MAX_FALLBACK_CHECKS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(status_check_config::DEFAULT_MAX_CHECKS);
+
+        let mut check_count = 0;
+        while check_count < max_checks {
             match tokio::time::sleep(Duration::from_secs(status_check_interval)).await {
                 () => {
-                    tracing::info!("=== EV-RETH: Periodic status check - node still running ===");
+                    check_count += 1;
+                    tracing::info!("=== EV-RETH: Periodic status check #{} - node still running ===", check_count);
                 }
             }
         }
+
+        tracing::info!("=== EV-RETH: Maximum fallback status checks ({}) reached, switching to efficient wait ===", max_checks);
+        // After reaching max checks, switch to efficient pending wait
+        std::future::pending::<()>().await;
     } else {
         tracing::info!("=== EV-RETH: Using efficient fallback - waiting indefinitely for natural node exit ===");
         tracing::info!("=== EV-RETH: Set EV_RETH_ENABLE_FALLBACK_STATUS_CHECKS=true to enable periodic status logging ===");
@@ -300,26 +327,18 @@ fn main() {
             let shutdown_signal = async {
                 #[cfg(unix)]
                 {
-                    // On Unix systems, handle both SIGTERM and SIGINT (Ctrl+C) separately for clarity
+                    // On Unix systems, handle both SIGTERM and SIGINT (Ctrl+C)
                     // SIGTERM is typically sent by process managers for graceful shutdown
                     // SIGINT is sent by Ctrl+C from terminal
                     match signal::unix::signal(signal::unix::SignalKind::terminate()) {
                         Ok(mut sigterm) => {
-                            // Successfully set up SIGTERM handler, now wait for either SIGTERM or SIGINT
+                            // Successfully set up SIGTERM handler, now wait for either signal
                             tokio::select! {
                                 _ = sigterm.recv() => {
                                     info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
                                 }
-                                result = signal::ctrl_c() => {
-                                    match result {
-                                        Ok(_) => {
-                                            info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                                        }
-                                        Err(err) => {
-                                            tracing::error!("Failed to wait for SIGINT: {}", err);
-                                            // Continue with shutdown even if SIGINT handling failed
-                                        }
-                                    }
+                                _ = signal::ctrl_c() => {
+                                    info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
                                 }
                             }
                         }
@@ -332,8 +351,6 @@ fn main() {
                                 }
                                 Err(ctrl_c_err) => {
                                     tracing::error!("Failed to wait for SIGINT: {}", ctrl_c_err);
-                                    // If we can't handle any signals, we should still shut down gracefully
-                                    // This prevents the application from hanging indefinitely
                                     tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
                                     // Use efficient fallback mechanism
                                     signal_fallback_mechanism().await;
@@ -395,7 +412,7 @@ fn main() {
                             // This provides better error reporting for monitoring systems
                             Err(Box::new(std::io::Error::new(
                                 std::io::ErrorKind::TimedOut,
-                                format!("Node shutdown timed out after {:?}. Check for stuck connections or long-running operations.", shutdown_timeout)
+                                format!("Graceful shutdown timed out after {}s", shutdown_timeout.as_secs())
                             )) as Box<dyn std::error::Error + Send + Sync>)
                         }
                     }
