@@ -189,39 +189,69 @@ fn main() {
 
             // Set up graceful shutdown handling
             let shutdown_signal = async {
-                #[cfg(unix)]
-                {
-                    // Set up SIGTERM handler with proper error handling
-                    // Note: We only handle SIGTERM explicitly; ctrl_c() handles SIGINT automatically
-                    match signal::unix::signal(signal::unix::SignalKind::terminate()) {
-                        Ok(mut sigterm) => {
-                            tokio::select! {
-                                _ = sigterm.recv() => {
-                                    info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
+                let signal_result = async {
+                    #[cfg(unix)]
+                    {
+                        // Set up SIGTERM handler with proper error handling
+                        // Note: We only handle SIGTERM explicitly; ctrl_c() handles SIGINT automatically
+                        match signal::unix::signal(signal::unix::SignalKind::terminate()) {
+                            Ok(mut sigterm) => {
+                                tokio::select! {
+                                    _ = sigterm.recv() => {
+                                        info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
+                                        Ok(())
+                                    }
+                                    result = signal::ctrl_c() => {
+                                        match result {
+                                            Ok(_) => {
+                                                info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                                                Ok(())
+                                            }
+                                            Err(err) => {
+                                                tracing::error!("Failed to wait for Ctrl+C: {}", err);
+                                                Err(err)
+                                            }
+                                        }
+                                    }
                                 }
-                                _ = signal::ctrl_c() => {
-                                    info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                            }
+                            Err(err) => {
+                                tracing::warn!("Failed to install SIGTERM handler: {}, falling back to SIGINT only", err);
+                                // Fall back to just handling SIGINT/Ctrl+C
+                                match signal::ctrl_c().await {
+                                    Ok(_) => {
+                                        info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                                        Ok(())
+                                    }
+                                    Err(ctrl_c_err) => {
+                                        tracing::error!("Failed to wait for Ctrl+C: {}", ctrl_c_err);
+                                        Err(ctrl_c_err)
+                                    }
                                 }
                             }
                         }
-                        Err(err) => {
-                            tracing::warn!("Failed to install SIGTERM handler: {}, falling back to SIGINT only", err);
-                            // Fall back to just handling SIGINT/Ctrl+C
-                            signal::ctrl_c().await.unwrap_or_else(|ctrl_c_err| {
-                                tracing::error!("Failed to wait for Ctrl+C: {}", ctrl_c_err);
-                            });
-                            info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                    }
+
+                    #[cfg(not(unix))]
+                    {
+                        // On non-Unix systems, only handle Ctrl+C
+                        match signal::ctrl_c().await {
+                            Ok(_) => {
+                                info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                                Ok(())
+                            }
+                            Err(err) => {
+                                tracing::error!("Failed to wait for Ctrl+C: {}", err);
+                                Err(err)
+                            }
                         }
                     }
-                }
+                }.await;
 
-                #[cfg(not(unix))]
-                {
-                    // On non-Unix systems, only handle Ctrl+C
-                    signal::ctrl_c().await.unwrap_or_else(|err| {
-                        tracing::error!("Failed to wait for Ctrl+C: {}", err);
-                    });
-                    info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                // Handle signal errors gracefully - if we can't set up signal handling,
+                // we should still allow the application to continue running
+                if let Err(err) = signal_result {
+                    tracing::warn!("Signal handling failed: {}, application will continue without graceful shutdown", err);
                 }
             };
 
@@ -237,18 +267,14 @@ fn main() {
                     // Initiate graceful shutdown with timeout
                     let shutdown_timeout = Duration::from_secs(30);
 
-                    // Wait for the node to finish shutting down with a timeout
-                    // Drop the handle to trigger shutdown, then wait for the node exit future
+                    // Get a reference to the node exit future before dropping the handle
+                    let mut node_exit_future = handle.node_exit_future;
+
+                    // Drop the handle to trigger shutdown
                     drop(handle);
 
                     // Wait for the node to actually exit with a timeout
-                    let shutdown_result = timeout(shutdown_timeout, async {
-                        // The node should exit gracefully after dropping the handle
-                        // We can't wait on node_exit_future here since handle is dropped,
-                        // but dropping the handle should trigger proper cleanup
-                        tokio::time::sleep(Duration::from_millis(500)).await;
-                        Ok(())
-                    }).await;
+                    let shutdown_result = timeout(shutdown_timeout, node_exit_future).await;
 
                     match shutdown_result {
                         Ok(result) => {
