@@ -3,6 +3,7 @@ FROM ghcr.io/cross-rs/cross:main
 # Install ARM64 cross-compilation toolchain
 RUN apt-get update && \
     apt-get install -y \
+        curl \
         gcc-aarch64-linux-gnu \
         g++-aarch64-linux-gnu \
         libc6-dev-arm64-cross \
