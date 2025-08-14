@@ -189,69 +189,65 @@ fn main() {
 
             // Set up graceful shutdown handling
             let shutdown_signal = async {
-                let signal_result = async {
-                    #[cfg(unix)]
-                    {
-                        // Set up SIGTERM handler with proper error handling
-                        // Note: We only handle SIGTERM explicitly; ctrl_c() handles SIGINT automatically
-                        match signal::unix::signal(signal::unix::SignalKind::terminate()) {
-                            Ok(mut sigterm) => {
-                                tokio::select! {
-                                    _ = sigterm.recv() => {
-                                        info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
-                                        Ok(())
-                                    }
-                                    result = signal::ctrl_c() => {
-                                        match result {
-                                            Ok(_) => {
-                                                info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                                                Ok(())
-                                            }
-                                            Err(err) => {
-                                                tracing::error!("Failed to wait for Ctrl+C: {}", err);
-                                                Err(err)
-                                            }
+                #[cfg(unix)]
+                {
+                    // On Unix systems, handle both SIGTERM and SIGINT (Ctrl+C) separately for clarity
+                    // SIGTERM is typically sent by process managers for graceful shutdown
+                    // SIGINT is sent by Ctrl+C from terminal
+                    match signal::unix::signal(signal::unix::SignalKind::terminate()) {
+                        Ok(mut sigterm) => {
+                            // Successfully set up SIGTERM handler, now wait for either SIGTERM or SIGINT
+                            tokio::select! {
+                                _ = sigterm.recv() => {
+                                    info!("=== EV-RETH: Received SIGTERM, initiating graceful shutdown ===");
+                                }
+                                result = signal::ctrl_c() => {
+                                    match result {
+                                        Ok(_) => {
+                                            info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                                        }
+                                        Err(err) => {
+                                            tracing::error!("Failed to wait for SIGINT: {}", err);
+                                            // Continue with shutdown even if SIGINT handling failed
                                         }
                                     }
                                 }
                             }
-                            Err(err) => {
-                                tracing::warn!("Failed to install SIGTERM handler: {}, falling back to SIGINT only", err);
-                                // Fall back to just handling SIGINT/Ctrl+C
-                                match signal::ctrl_c().await {
-                                    Ok(_) => {
-                                        info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                                        Ok(())
-                                    }
-                                    Err(ctrl_c_err) => {
-                                        tracing::error!("Failed to wait for Ctrl+C: {}", ctrl_c_err);
-                                        Err(ctrl_c_err)
-                                    }
+                        }
+                        Err(err) => {
+                            tracing::warn!("Failed to install SIGTERM handler: {}, falling back to SIGINT only", err);
+                            // Fall back to just handling SIGINT/Ctrl+C
+                            match signal::ctrl_c().await {
+                                Ok(_) => {
+                                    info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                                }
+                                Err(ctrl_c_err) => {
+                                    tracing::error!("Failed to wait for SIGINT: {}", ctrl_c_err);
+                                    // If we can't handle any signals, we should still shut down gracefully
+                                    // This prevents the application from hanging indefinitely
+                                    tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
+                                    // Wait indefinitely - this branch should rarely be reached
+                                    std::future::pending::<()>().await;
                                 }
                             }
                         }
                     }
+                }
 
-                    #[cfg(not(unix))]
-                    {
-                        // On non-Unix systems, only handle Ctrl+C
-                        match signal::ctrl_c().await {
-                            Ok(_) => {
-                                info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
-                                Ok(())
-                            }
-                            Err(err) => {
-                                tracing::error!("Failed to wait for Ctrl+C: {}", err);
-                                Err(err)
-                            }
+                #[cfg(not(unix))]
+                {
+                    // On non-Unix systems, only handle Ctrl+C (SIGINT)
+                    match signal::ctrl_c().await {
+                        Ok(_) => {
+                            info!("=== EV-RETH: Received SIGINT/Ctrl+C, initiating graceful shutdown ===");
+                        }
+                        Err(err) => {
+                            tracing::error!("Failed to wait for SIGINT: {}", err);
+                            tracing::warn!("No signal handling available, shutdown will only occur on natural node exit");
+                            // Wait indefinitely - this branch should rarely be reached
+                            std::future::pending::<()>().await;
                         }
                     }
-                }.await;
-
-                // Handle signal errors gracefully - if we can't set up signal handling,
-                // we should still allow the application to continue running
-                if let Err(err) = signal_result {
-                    tracing::warn!("Signal handling failed: {}, application will continue without graceful shutdown", err);
                 }
             };
 

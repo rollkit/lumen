@@ -25,8 +25,8 @@ mod tests {
             }
         };
 
-        // Use a very short timeout since we're not actually sending a signal
-        let result = timeout(Duration::from_millis(10), shutdown_signal).await;
+        // Use a reasonable timeout that works reliably across different systems
+        let result = timeout(Duration::from_millis(100), shutdown_signal).await;
 
         // The timeout should occur since we're not actually sending a signal
         assert!(
@@ -106,8 +106,8 @@ mod tests {
             }
         };
 
-        // Use a very short timeout since we're not actually sending signals
-        let result = timeout(Duration::from_millis(10), shutdown_signal).await;
+        // Use a reasonable timeout that works reliably across different systems
+        let result = timeout(Duration::from_millis(100), shutdown_signal).await;
 
         // The timeout should occur since we're not actually sending signals
         assert!(
@@ -159,8 +159,8 @@ mod tests {
             }
         };
 
-        // Use a very short timeout since we're not actually sending signals
-        let result = timeout(Duration::from_millis(10), shutdown_signal).await;
+        // Use a reasonable timeout that works reliably across different systems
+        let result = timeout(Duration::from_millis(100), shutdown_signal).await;
 
         // The timeout should occur since we're not actually sending signals
         assert!(
@@ -203,8 +203,8 @@ mod tests {
             }
         };
 
-        // Use a very short timeout since we're not actually sending signals
-        let result = timeout(Duration::from_millis(10), shutdown_signal).await;
+        // Use a reasonable timeout that works reliably across different systems
+        let result = timeout(Duration::from_millis(100), shutdown_signal).await;
 
         // The timeout should occur since we're not actually sending signals
         assert!(
