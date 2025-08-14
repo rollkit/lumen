@@ -107,7 +107,7 @@ impl NodeConfig {
     fn parse_shutdown_timeout() -> Duration {
         match std::env::var("EV_RETH_SHUTDOWN_TIMEOUT") {
             Ok(val) => match val.parse::<u64>() {
-                Ok(secs) if secs >= Self::MIN_SHUTDOWN_TIMEOUT_SECS && secs <= Self::MAX_SHUTDOWN_TIMEOUT_SECS => {
+                Ok(secs) if (Self::MIN_SHUTDOWN_TIMEOUT_SECS..=Self::MAX_SHUTDOWN_TIMEOUT_SECS).contains(&secs) => {
                     tracing::info!("Using custom shutdown timeout of {}s from environment", secs);
                     Duration::from_secs(secs)
                 }
@@ -136,7 +136,7 @@ impl NodeConfig {
     fn parse_status_check_interval() -> u64 {
         match std::env::var("EV_RETH_STATUS_CHECK_INTERVAL") {
             Ok(val) => match val.parse::<u64>() {
-                Ok(secs) if secs >= Self::MIN_STATUS_CHECK_INTERVAL_SECS && secs <= Self::MAX_STATUS_CHECK_INTERVAL_SECS => {
+                Ok(secs) if (Self::MIN_STATUS_CHECK_INTERVAL_SECS..=Self::MAX_STATUS_CHECK_INTERVAL_SECS).contains(&secs) => {
                     tracing::info!("Using custom status check interval of {}s from environment", secs);
                     secs
                 }
