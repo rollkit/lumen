@@ -2,11 +2,8 @@
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::process;
     use std::time::Duration;
-    use tokio::signal;
-    use tokio::time::timeout;
+    use tokio::{signal, time::timeout};
 
     /// Test that SIGTERM triggers graceful shutdown
     #[tokio::test]
@@ -118,9 +115,11 @@ mod tests {
     /// Test that the tokio::select! logic works correctly with mock futures
     #[tokio::test]
     async fn test_select_logic_with_mock_futures() {
-        use std::future::Future;
-        use std::pin::Pin;
-        use std::task::{Context, Poll};
+        use std::{
+            future::Future,
+            pin::Pin,
+            task::{Context, Poll},
+        };
 
         // Mock future that never completes (simulates node_exit_future)
         struct NeverComplete;
@@ -146,7 +145,7 @@ mod tests {
         let shutdown_signal = CompleteImmediately;
 
         // Test the select logic
-        let result = tokio::select! {
+        let result: Result<(), Box<dyn std::error::Error + Send + Sync>> = tokio::select! {
             result = &mut mock_node_exit => {
                 panic!("Node exit future should not complete in this test");
             }

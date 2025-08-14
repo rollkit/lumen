@@ -3,8 +3,7 @@
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
-    use tokio::signal;
-    use tokio::time::timeout;
+    use tokio::{signal, time::timeout};
 
     /// Test that SIGTERM signal handler can be created (Unix only)
     #[tokio::test]
@@ -47,9 +46,11 @@ mod tests {
     /// Test the tokio::select! pattern used in main
     #[tokio::test]
     async fn test_select_pattern() {
-        use std::future::Future;
-        use std::pin::Pin;
-        use std::task::{Context, Poll};
+        use std::{
+            future::Future,
+            pin::Pin,
+            task::{Context, Poll},
+        };
 
         // Mock future that never completes (simulates node_exit_future)
         struct NeverComplete;
@@ -75,7 +76,7 @@ mod tests {
         let shutdown_signal = CompleteImmediately;
 
         // Test the select logic matches what we use in main.rs
-        let result = tokio::select! {
+        let result: Result<(), Box<dyn std::error::Error + Send + Sync>> = tokio::select! {
             result = &mut mock_node_exit => {
                 panic!("Node exit future should not complete in this test");
             }
