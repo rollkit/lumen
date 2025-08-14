@@ -43,7 +43,7 @@ mod tests {
         );
     }
 
-    /// Test the tokio::select! pattern used in main
+    /// Test the `tokio::select!` pattern used in main
     #[tokio::test]
     async fn test_select_pattern() {
         use std::{
@@ -77,7 +77,7 @@ mod tests {
 
         // Test the select logic matches what we use in main.rs
         let result: Result<(), Box<dyn std::error::Error + Send + Sync>> = tokio::select! {
-            result = &mut mock_node_exit => {
+            _result = &mut mock_node_exit => {
                 panic!("Node exit future should not complete in this test");
             }
             _ = shutdown_signal => {
@@ -197,14 +197,12 @@ mod tests {
         match sigterm_result {
             Ok(_sigterm) => {
                 println!("=== TEST: SIGTERM handler created successfully ===");
-                // Success case - handler was created
-                assert!(true, "SIGTERM handler should be created successfully");
+                // Success case - handler was created, test passes
             }
             Err(err) => {
                 println!("TEST: SIGTERM handler creation failed: {}", err);
                 // Error case - should not panic, just log and continue
-                // This tests that our error handling is robust
-                assert!(true, "Error handling should not panic");
+                // This tests that our error handling is robust and doesn't panic
             }
         }
     }
